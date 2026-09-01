@@ -137,7 +137,7 @@
     <input class="global-search" placeholder="搜索">
     <div class="top-spacer"></div>
     <div class="top-actions">
-      <span class="top-action">待办</span><span class="top-action">下载中心</span><span class="top-action">南京众丞－管理中心⌄</span><span>马正安_名称超...</span><span class="avatar">马</span>
+      <span class="top-action">待办</span><span class="top-action">下载中心</span><span class="top-action">示例组织－管理中心⌄</span><span>演示用户</span><span class="avatar">示</span>
     </div>
   </header>
 
@@ -175,8 +175,8 @@
               <div class="field">
                 <label class="required">组织</label>
                 <select class="select" id="orgSelect">
-                  <option value="wanhao">万好公司</option>
-                  <option value="wantuo">万拓公司</option>
+                  <option value="wanhao">示例组织A</option>
+                  <option value="wantuo">示例组织B</option>
                 </select>
               </div>
               <div class="field">
@@ -214,7 +214,7 @@
       </div>
       <div class="modal-body">
         <div class="batch-box">
-          <textarea id="batchCodes" placeholder="请输入门店编码，支持换行、逗号或空格分隔，例如：&#10;WH001&#10;WH002"></textarea>
+          <textarea id="batchCodes" placeholder="请输入门店编码，支持换行、逗号或空格分隔，例如：&#10;ST001&#10;ST002"></textarea>
           <button class="btn primary" id="batchSearch">批量查询</button>
           <div class="batch-note">只查询当前组织及已选配送中心门店覆盖的普通门店，匹配成功后自动勾选。</div>
         </div>
@@ -243,41 +243,41 @@
   <script>
     const orgs = {
       wanhao: {
-        name: "万好公司",
+        name: "示例组织A",
         dcs: [
           { id: "dc-nanning", code: "DC001", name: "南宁配送中心门店" },
           { id: "dc-haikou", code: "DC002", name: "海口配送中心门店" }
         ],
         stores: [
-          { id: "s1", code: "WH001", name: "万好测试店001", dcs: ["dc-nanning", "dc-haikou"] },
-          { id: "s2", code: "WH002", name: "万好测试店002", dcs: ["dc-nanning"] },
-          { id: "s3", code: "WH003", name: "万好测试店003", dcs: ["dc-nanning"] },
-          { id: "s4", code: "WH004", name: "万好测试店004", dcs: ["dc-haikou"] }
+          { id: "s1", code: "ST001", name: "示例门店001", dcs: ["dc-nanning", "dc-haikou"] },
+          { id: "s2", code: "ST002", name: "示例门店002", dcs: ["dc-nanning"] },
+          { id: "s3", code: "ST003", name: "示例门店003", dcs: ["dc-nanning"] },
+          { id: "s4", code: "ST004", name: "示例门店004", dcs: ["dc-haikou"] }
         ]
       },
       wantuo: {
-        name: "万拓公司",
+        name: "示例组织B",
         dcs: [{ id: "dc-guiyang", code: "DC101", name: "贵阳配送中心门店" }],
         stores: [
-          { id: "s5", code: "WT001", name: "万拓测试店001", dcs: ["dc-guiyang"] },
-          { id: "s6", code: "WT002", name: "万拓测试店002", dcs: ["dc-guiyang"] }
+          { id: "s5", code: "ST101", name: "示例门店101", dcs: ["dc-guiyang"] },
+          { id: "s6", code: "ST102", name: "示例门店102", dcs: ["dc-guiyang"] }
         ]
       }
     };
 
     const sampleRows = [
-      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"新品首配规则", triggers:["新品","首次入库"], qty:1, yes:true, reason:"—" },
-      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010002", itemName:"海盐夹心脆 108g", rule:"新品首配规则", triggers:["首次入库"], qty:0, yes:false, reason:"近365天内已主动下单；一年内已自动统配" },
-      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010003", itemName:"芝士玉米脆 76g", rule:"新品首配规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
-      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010004", itemName:"蜂蜜黄油薯片 68g", rule:"新品首配规则", triggers:["新品"], qty:0, yes:false, reason:"商品已停售，当前规则不允许停售商品统配；配送价格为0" },
-      { store:"WH001", storeName:"万好测试店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020001", itemName:"椰香薄脆 100g", rule:"海口新品统配", triggers:["首次入库"], qty:2, yes:true, reason:"—" },
-      { store:"WH001", storeName:"万好测试店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020002", itemName:"咖啡味威化 112g", rule:"海口新品统配", triggers:["新品","首次入库"], qty:0, yes:false, reason:"命中自动排除规则“海口仓咖啡品类排除”；发货门店可用库存不足" },
-      { store:"WH002", storeName:"万好测试店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"门店标签新品规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
-      { store:"WH002", storeName:"万好测试店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010005", itemName:"黑糖燕麦酥 120g", rule:"门店标签新品规则", triggers:["首次入库"], qty:0, yes:false, reason:"商品不在自动统配规则商品范围；门店近7天PSD不满足自动统配条件" },
-      { store:"WH003", storeName:"万好测试店003", dc:"DC001", dcName:"南宁配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true },
-      { store:"WH004", storeName:"万好测试店004", dc:"DC002", dcName:"海口配送中心门店", item:"10020003", itemName:"芒果冻干 35g", rule:"海口新品统配", triggers:["新品"], qty:0, yes:false, reason:"商品已停止要货，当前规则不允许停止要货商品统配", storeLevel:false },
-      { store:"WT001", storeName:"万拓测试店001", dc:"DC101", dcName:"贵阳配送中心门店", item:"20010001", itemName:"麻辣土豆片 75g", rule:"贵阳首次入库规则", triggers:["首次入库"], qty:1, yes:true, reason:"—" },
-      { store:"WT002", storeName:"万拓测试店002", dc:"DC101", dcName:"贵阳配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true }
+      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"新品首配规则", triggers:["新品","首次入库"], qty:1, yes:true, reason:"—" },
+      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010002", itemName:"海盐夹心脆 108g", rule:"新品首配规则", triggers:["首次入库"], qty:0, yes:false, reason:"近365天内已主动下单；一年内已自动统配" },
+      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010003", itemName:"芝士玉米脆 76g", rule:"新品首配规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
+      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010004", itemName:"蜂蜜黄油薯片 68g", rule:"新品首配规则", triggers:["新品"], qty:0, yes:false, reason:"商品已停售，当前规则不允许停售商品统配；配送价格为0" },
+      { store:"ST001", storeName:"示例门店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020001", itemName:"椰香薄脆 100g", rule:"海口新品统配", triggers:["首次入库"], qty:2, yes:true, reason:"—" },
+      { store:"ST001", storeName:"示例门店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020002", itemName:"咖啡味威化 112g", rule:"海口新品统配", triggers:["新品","首次入库"], qty:0, yes:false, reason:"命中自动排除规则“海口仓咖啡品类排除”；发货门店可用库存不足" },
+      { store:"ST002", storeName:"示例门店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"门店标签新品规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
+      { store:"ST002", storeName:"示例门店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010005", itemName:"黑糖燕麦酥 120g", rule:"门店标签新品规则", triggers:["首次入库"], qty:0, yes:false, reason:"商品不在自动统配规则商品范围；门店近7天PSD不满足自动统配条件" },
+      { store:"ST003", storeName:"示例门店003", dc:"DC001", dcName:"南宁配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true },
+      { store:"ST004", storeName:"示例门店004", dc:"DC002", dcName:"海口配送中心门店", item:"10020003", itemName:"芒果冻干 35g", rule:"海口新品统配", triggers:["新品"], qty:0, yes:false, reason:"商品已停止要货，当前规则不允许停止要货商品统配", storeLevel:false },
+      { store:"ST101", storeName:"示例门店101", dc:"DC101", dcName:"贵阳配送中心门店", item:"20010001", itemName:"麻辣土豆片 75g", rule:"贵阳首次入库规则", triggers:["首次入库"], qty:1, yes:true, reason:"—" },
+      { store:"ST102", storeName:"示例门店102", dc:"DC101", dcName:"贵阳配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true }
     ];
 
     const orgSelect = document.getElementById("orgSelect");
