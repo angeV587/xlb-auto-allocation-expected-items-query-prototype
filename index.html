@@ -59,27 +59,23 @@
     .back { border: 0; background: transparent; color: var(--blue); padding: 5px 3px; }
     .crumb { color: var(--muted); font-size: 13px; }
     .page-title { font-size: 16px; font-weight: 600; }
-    .head-note { margin-left: auto; color: var(--muted); font-size: 12px; }
-
-    .filter-card { margin-top: 14px; border: 1px solid var(--border); background: #fbfcfe; padding: 15px 14px 12px; }
-    .form-grid { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(300px, 1.2fr) minmax(430px, 1.8fr); gap: 14px; align-items: end; }
+    .filter-card { margin-top: 14px; border: 1px solid var(--border); background: #fbfcfe; padding: 12px 14px; }
+    .form-grid { display: grid; grid-template-columns: 220px 310px minmax(360px, 1fr) auto; gap: 12px; align-items: end; }
     .field label { display: block; font-size: 13px; margin-bottom: 7px; color: #414b5e; }
     .required::before { content: "*"; color: var(--red); margin-right: 4px; }
     .select, .input-shell { height: 34px; width: 100%; border: 1px solid #cfd6e2; border-radius: 2px; background: #fff; color: #384255; padding: 0 10px; outline: none; }
     .select:focus, .input-shell:focus-within { border-color: #6b8df2; box-shadow: 0 0 0 2px rgba(65,102,232,.1); }
     .input-shell { display: flex; align-items: center; padding: 3px 6px; gap: 6px; overflow: hidden; }
-    .chip { max-width: 135px; height: 25px; border: 1px solid #c8d7ff; color: #3559ca; background: #edf3ff; display: inline-flex; align-items: center; gap: 5px; padding: 0 7px; border-radius: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
-    .chip button { border: 0; background: transparent; color: #6b7faa; padding: 0; }
+    .select-summary { color: #45536a; font-size: 13px; padding-left: 3px; }
     .store-placeholder { color: #a5adba; font-size: 13px; flex: 1; }
     .selector-trigger { margin-left: auto; border: 0; border-left: 1px solid var(--border); background: #fff; color: var(--blue); height: 26px; padding-left: 10px; }
-    .helper { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .filter-actions { display: flex; align-items: center; margin-top: 12px; gap: 8px; }
+    .filter-actions { display: flex; align-items: center; gap: 8px; padding-bottom: 1px; }
     .btn { height: 32px; border-radius: 2px; padding: 0 15px; border: 1px solid #cbd3df; background: #fff; color: #4b5669; }
     .btn.primary { background: var(--blue-weak); border-color: var(--blue-border); color: #315bcf; }
     .btn.solid { background: var(--blue); border-color: var(--blue); color: #fff; }
     .btn:disabled { cursor: not-allowed; opacity: .48; }
 
-    .result-toolbar { min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 10px 0 8px; }
+    .result-toolbar { min-height: 50px; display: flex; align-items: center; gap: 10px; padding: 10px 0 8px; }
     .summary { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
     .summary b { color: #33405a; font-size: 14px; }
     .badge { padding: 3px 8px; border-radius: 10px; background: #f0f2f6; color: #69758a; }
@@ -92,7 +88,7 @@
     .status-filter button.active { background: var(--blue-weak); color: var(--blue); }
 
     .table-wrap { width: 100%; overflow: auto; border: 1px solid var(--border); }
-    table { width: 100%; min-width: 1348px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+    table { width: 100%; min-width: 1080px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
     th { height: 38px; text-align: left; padding: 0 9px; background: #f7f8fa; color: #4c5668; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-weight: 600; }
     td { height: 42px; padding: 7px 9px; border-right: 1px solid #e6eaf0; border-bottom: 1px solid #e6eaf0; color: #3f495b; vertical-align: top; line-height: 1.5; }
     tbody tr:hover { background: #f6f9ff; }
@@ -102,6 +98,8 @@
     .tag.no { color: var(--red); background: #fff0f0; }
     .tag.trigger { color: #3c64d6; background: #edf3ff; margin-right: 4px; margin-bottom: 3px; }
     .rule-link { color: #2e63d5; text-decoration: none; }
+    .cell-main { color: #3f495b; }
+    .cell-sub { margin-top: 2px; color: #929cab; font-size: 11px; }
     .reason { color: #c44b4b; }
     .muted { color: #9aa3b1; }
     .pager { height: 42px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 12px; color: #69758a; }
@@ -117,11 +115,9 @@
     .modal-title { font-size: 16px; font-weight: 600; }
     .modal-close { margin-left: auto; border: 0; background: transparent; color: #7e899b; font-size: 22px; }
     .modal-body { padding: 14px 16px; overflow: auto; }
-    .batch-box { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px; background: #f7f9fc; border: 1px solid #e2e7ef; }
-    .batch-box textarea { height: 62px; resize: none; padding: 8px 10px; border: 1px solid #cfd6e2; outline: 0; line-height: 1.5; }
-    .batch-note { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
-    .store-search { margin: 12px 0 8px; display: flex; gap: 8px; }
-    .store-search input { width: 330px; height: 32px; border: 1px solid #cfd6e2; padding: 0 9px; }
+    .selector-search { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px; }
+    .selector-search input { height: 34px; border: 1px solid #cfd6e2; padding: 0 10px; outline: 0; }
+    .selector-search small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
     .store-table { min-width: 0; }
     .store-table th, .store-table td { height: 36px; }
     .selected-line { margin-top: 10px; font-size: 12px; color: #69758a; }
@@ -164,10 +160,9 @@
       <div class="content">
         <section class="page">
           <div class="page-head">
-            <button class="back" id="backButton">‹ 返回</button>
-            <span class="crumb">自动统配规则 /</span>
+            <button class="back" id="backButton">‹ 自动统配规则</button>
+            <span class="crumb">/</span>
             <span class="page-title">自动统配一键查询</span>
-            <span class="head-note">查询结果为当前时点预计结果，不生成自动统配单</span>
           </div>
 
           <div class="filter-card">
@@ -182,7 +177,6 @@
               <div class="field">
                 <label>配送中心门店</label>
                 <select class="select" id="dcSelect"></select>
-                <div class="helper">不选择时，按所选门店的配送组织设置查询全部配送中心门店。</div>
               </div>
               <div class="field">
                 <label class="required">门店</label>
@@ -190,13 +184,11 @@
                   <span class="store-placeholder" id="storePlaceholder">请选择普通门店</span>
                   <button class="selector-trigger" id="openStoreSelector">选择门店</button>
                 </div>
-                <div class="helper">支持按门店编码批量查询后多选，也支持在结果中手动勾选。</div>
               </div>
-            </div>
-            <div class="filter-actions">
-              <button class="btn solid" id="queryButton">查询</button>
-              <button class="btn" id="resetButton">重置</button>
-              <button class="btn primary" id="exportButton">导出</button>
+              <div class="filter-actions">
+                <button class="btn solid" id="queryButton">查询</button>
+                <button class="btn" id="resetButton">重置</button>
+              </div>
             </div>
           </div>
 
@@ -213,19 +205,15 @@
         <button class="modal-close" id="closeStoreSelector">×</button>
       </div>
       <div class="modal-body">
-        <div class="batch-box">
-          <textarea id="batchCodes" placeholder="请输入门店编码，支持换行、逗号或空格分隔，例如：&#10;ST001&#10;ST002"></textarea>
-          <button class="btn primary" id="batchSearch">批量查询</button>
-          <div class="batch-note">只查询当前组织及已选配送中心门店覆盖的普通门店，匹配成功后自动勾选。</div>
-        </div>
-        <div class="store-search">
-          <input id="storeKeyword" placeholder="门店编码 / 门店名称">
-          <button class="btn" id="storeSearchButton">查询</button>
+        <div class="selector-search">
+          <input id="storeKeyword" placeholder="门店编码 / 门店名称；多个编码用逗号、空格或换行分隔">
+          <button class="btn primary" id="batchSearch">查询</button>
+          <small>查询范围为当前组织及已选配送中心门店覆盖的普通门店；多个门店编码匹配成功后自动勾选。</small>
         </div>
         <div class="table-wrap">
           <table class="store-table">
-            <colgroup><col style="width:56px"><col style="width:150px"><col style="width:230px"><col style="width:220px"><col></colgroup>
-            <thead><tr><th class="center">选择</th><th>门店编码</th><th>门店名称</th><th>所属组织</th><th>配送中心门店</th></tr></thead>
+            <colgroup><col style="width:56px"><col style="width:150px"><col style="width:230px"><col></colgroup>
+            <thead><tr><th class="center">选择</th><th>门店编码</th><th>门店名称</th><th>配送中心门店</th></tr></thead>
             <tbody id="storeTableBody"></tbody>
           </table>
         </div>
@@ -303,8 +291,6 @@
 
     function selectedOrg() { return orgs[orgSelect.value]; }
     function selectedDc() { return selectedOrg().dcs.find(dc => dc.id === dcSelect.value); }
-    function dcByCode(code) { return selectedOrg().dcs.find(dc => dc.code === code); }
-
     function renderDcOptions() {
       const old = dcSelect.value;
       dcSelect.innerHTML = '<option value="">全部（按门店配送组织设置）</option>' + selectedOrg().dcs.map(dc => `<option value="${dc.id}">${dc.code}｜${dc.name}</option>`).join("");
@@ -317,26 +303,14 @@
     }
 
     function renderStoreChips() {
-      [...storeInput.querySelectorAll(".chip")].forEach(node => node.remove());
+      [...storeInput.querySelectorAll(".select-summary")].forEach(node => node.remove());
       const stores = selectedOrg().stores.filter(s => selectedStores.includes(s.id));
       storePlaceholder.style.display = stores.length ? "none" : "inline";
-      stores.slice(0, 2).forEach(store => {
-        const chip = document.createElement("span");
-        chip.className = "chip";
-        chip.innerHTML = `<span>${store.code}｜${store.name}</span><button data-remove="${store.id}">×</button>`;
-        storeInput.insertBefore(chip, document.getElementById("openStoreSelector"));
-      });
-      if (stores.length > 2) {
-        const chip = document.createElement("span");
-        chip.className = "chip";
-        chip.textContent = `+${stores.length - 2}`;
-        storeInput.insertBefore(chip, document.getElementById("openStoreSelector"));
-      }
-      storeInput.querySelectorAll("[data-remove]").forEach(btn => btn.addEventListener("click", event => {
-        event.preventDefault();
-        selectedStores = selectedStores.filter(id => id !== btn.dataset.remove);
-        renderStoreChips();
-      }));
+      if (!stores.length) return;
+      const summary = document.createElement("span");
+      summary.className = "select-summary";
+      summary.textContent = `已选择 ${stores.length} 家门店`;
+      storeInput.insertBefore(summary, document.getElementById("openStoreSelector"));
     }
 
     function renderStoreTable() {
@@ -345,7 +319,7 @@
         const dcNames = store.dcs.map(id => selectedOrg().dcs.find(dc => dc.id === id)?.name).filter(Boolean).join("、");
         return `<tr>
           <td class="center"><input type="checkbox" data-store-check="${store.id}" ${tempSelected.has(store.id) ? "checked" : ""}></td>
-          <td>${store.code}</td><td>${store.name}</td><td>${selectedOrg().name}</td><td>${dcNames}</td>
+          <td>${store.code}</td><td>${store.name}</td><td>${dcNames}</td>
         </tr>`;
       }).join("");
       storeTableBody.querySelectorAll("[data-store-check]").forEach(box => box.addEventListener("change", () => {
@@ -359,7 +333,6 @@
       tempSelected = new Set(selectedStores.filter(id => availableStores().some(store => store.id === id)));
       storeKeyword = "";
       document.getElementById("storeKeyword").value = "";
-      document.getElementById("batchCodes").value = "";
       renderStoreTable();
       storeOverlay.classList.add("open");
       storeOverlay.setAttribute("aria-hidden", "false");
@@ -383,13 +356,11 @@
         resultArea.innerHTML = `<div class="empty"><strong>请选择组织和门店后查询</strong><span>配送中心门店为空时，将按门店配送组织设置展开查询。</span></div>`;
         return;
       }
-      const storeCount = new Set(currentRows.map(row => row.store)).size;
-      const dcCount = new Set(currentRows.map(row => row.dc)).size;
       const yesCount = currentRows.filter(row => row.yes).length;
       const noCount = currentRows.length - yesCount;
       resultArea.innerHTML = `
         <div class="result-toolbar">
-          <div class="summary"><span>查询结果</span><b>${currentRows.length}</b><span>条</span><span class="badge">${storeCount} 家门店</span><span class="badge">${dcCount} 个配送中心门店</span><span class="badge yes">预计统配 ${yesCount}</span><span class="badge no">不统配 ${noCount}</span></div>
+          <div class="summary"><span>查询结果</span><b>${currentRows.length}</b><span>条</span><span class="badge yes">预计统配 ${yesCount}</span><span class="badge no">不统配 ${noCount}</span><span>结果按查询时点试算，不生成单据</span></div>
           <div class="toolbar-spacer"></div>
           <span class="muted">是否统配</span>
           <div class="status-filter">
@@ -397,17 +368,20 @@
             <button data-filter="yes" class="${statusFilter === "yes" ? "active" : ""}">是</button>
             <button data-filter="no" class="${statusFilter === "no" ? "active" : ""}">否</button>
           </div>
+          <button class="btn primary" id="exportResultButton">导出</button>
         </div>
         <div class="table-wrap">
           <table>
             <colgroup>
-              <col style="width:48px"><col style="width:88px"><col style="width:125px"><col style="width:92px"><col style="width:140px"><col style="width:98px"><col style="width:160px"><col style="width:142px"><col style="width:116px"><col style="width:92px"><col style="width:76px"><col style="width:265px">
+              <col style="width:45px"><col style="width:115px"><col style="width:145px"><col style="width:165px"><col style="width:125px"><col style="width:100px"><col style="width:70px"><col style="width:65px"><col style="width:250px">
             </colgroup>
-            <thead><tr><th>序号</th><th>门店编码</th><th>门店名称</th><th>配送中心编码</th><th>配送中心门店</th><th>商品代码</th><th>商品名称</th><th>自动统配规则名称</th><th>命中条件</th><th>预计统配数量</th><th>是否统配</th><th>不统配原因</th></tr></thead>
+            <thead><tr><th>序号</th><th>门店</th><th>配送中心门店</th><th>商品</th><th>统配规则</th><th>命中条件</th><th>预计数量</th><th>结论</th><th>不统配原因</th></tr></thead>
             <tbody>${rows.map((row, index) => `<tr>
               <td class="center">${index + 1}</td>
-              <td>${row.store}</td><td>${row.storeName}</td><td>${row.dc}</td><td>${row.dcName}</td>
-              <td>${row.item}</td><td>${row.itemName}</td><td>${row.rule === "—" ? '<span class="muted">—</span>' : `<a class="rule-link" href="#" data-rule="${row.rule}">${row.rule}</a>`}</td>
+              <td><div class="cell-main">${row.storeName}</div><div class="cell-sub">${row.store}</div></td>
+              <td><div class="cell-main">${row.dcName}</div><div class="cell-sub">${row.dc}</div></td>
+              <td>${row.item === "—" ? '<span class="muted">—</span>' : `<div class="cell-main">${row.itemName}</div><div class="cell-sub">${row.item}</div>`}</td>
+              <td>${row.rule === "—" ? '<span class="muted">—</span>' : `<a class="rule-link" href="#" data-rule="${row.rule}">${row.rule}</a>`}</td>
               <td>${row.triggers.length ? row.triggers.map(trigger => `<span class="tag trigger">${trigger}</span>`).join("") : '<span class="muted">—</span>'}</td>
               <td class="center">${row.qty}</td><td class="center"><span class="tag ${row.yes ? "yes" : "no"}">${row.yes ? "是" : "否"}</span></td>
               <td class="${row.yes ? "muted" : "reason"}">${row.reason}</td>
@@ -417,6 +391,7 @@
         <div class="pager"><span>共 ${rows.length} 条</span><button class="page-num">1</button><span>200 条/页</span></div>`;
       resultArea.querySelectorAll("[data-filter]").forEach(button => button.addEventListener("click", () => { statusFilter = button.dataset.filter; renderResults(); }));
       resultArea.querySelectorAll("[data-rule]").forEach(link => link.addEventListener("click", event => { event.preventDefault(); showToast(`示例：查看规则“${link.dataset.rule}”`); }));
+      document.getElementById("exportResultButton").addEventListener("click", exportCsv);
     }
 
     function runQuery() {
@@ -455,18 +430,24 @@
     document.getElementById("closeStoreSelector").addEventListener("click", closeStoreSelector);
     document.getElementById("cancelStoreSelector").addEventListener("click", closeStoreSelector);
     document.getElementById("confirmStores").addEventListener("click", () => { selectedStores = [...tempSelected]; renderStoreChips(); closeStoreSelector(); currentRows = []; renderResults(); });
-    document.getElementById("storeSearchButton").addEventListener("click", () => { storeKeyword = document.getElementById("storeKeyword").value.trim(); renderStoreTable(); });
-    document.getElementById("storeKeyword").addEventListener("keydown", event => { if (event.key === "Enter") { storeKeyword = event.target.value.trim(); renderStoreTable(); } });
+    document.getElementById("storeKeyword").addEventListener("keydown", event => { if (event.key === "Enter") document.getElementById("batchSearch").click(); });
     document.getElementById("batchSearch").addEventListener("click", () => {
-      const codes = document.getElementById("batchCodes").value.split(/[\s,，;；]+/).map(code => code.trim().toUpperCase()).filter(Boolean);
+      const value = document.getElementById("storeKeyword").value.trim();
+      const codes = value.split(/[\s,，;；]+/).map(code => code.trim().toUpperCase()).filter(Boolean);
       const matched = availableStores().filter(store => codes.includes(store.code.toUpperCase()));
-      matched.forEach(store => tempSelected.add(store.id));
+      if (matched.length) {
+        matched.forEach(store => tempSelected.add(store.id));
+        storeKeyword = "";
+        renderStoreTable();
+        showToast(`匹配 ${matched.length} 家门店，已自动勾选`);
+        return;
+      }
+      storeKeyword = value;
       renderStoreTable();
-      showToast(codes.length ? `匹配 ${matched.length} 家门店，已自动勾选` : "请输入门店编码");
+      if (!value) showToast("请输入门店编码或名称");
     });
     document.getElementById("queryButton").addEventListener("click", runQuery);
     document.getElementById("resetButton").addEventListener("click", () => { dcSelect.value = ""; selectedStores = []; currentRows = []; statusFilter = "all"; renderStoreChips(); renderResults(); });
-    document.getElementById("exportButton").addEventListener("click", exportCsv);
     document.getElementById("backButton").addEventListener("click", () => showToast("示例：返回自动统配规则列表"));
     storeOverlay.addEventListener("click", event => { if (event.target === storeOverlay) closeStoreSelector(); });
 
