@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自动统配一键查询｜交互原型</title>
+  <style>
+    :root {
+      --blue: #4166e8;
+      --blue-weak: #edf3ff;
+      --blue-border: #b9cdfd;
+      --text: #273144;
+      --muted: #78849a;
+      --border: #dfe4ec;
+      --bg: #f4f6f9;
+      --green: #17a673;
+      --red: #e05252;
+      --orange: #e4932f;
+      --sidebar: 118px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 1180px; height: 100%; font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif; color: var(--text); background: var(--bg); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      height: 48px;
+      background: var(--blue);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; width: 140px; }
+    .brand-mark { font-size: 19px; font-weight: 700; letter-spacing: 1px; transform: skew(-8deg); }
+    .app-grid { font-size: 22px; letter-spacing: 2px; opacity: .95; }
+    .global-search { width: 282px; height: 32px; border: 0; border-radius: 3px; padding: 0 34px 0 12px; background: rgba(255,255,255,.22); color: #fff; outline: 0; }
+    .global-search::placeholder { color: rgba(255,255,255,.82); }
+    .top-spacer { flex: 1; }
+    .top-actions { display: flex; align-items: center; gap: 20px; font-size: 13px; }
+    .top-action { opacity: .92; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: var(--blue); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+
+    .shell { display: flex; height: calc(100vh - 48px); }
+    .sidebar { width: var(--sidebar); background: #fff; border-right: 1px solid var(--border); padding-top: 42px; flex: 0 0 auto; }
+    .nav-item { height: 50px; padding-left: 18px; display: flex; align-items: center; gap: 12px; color: #333; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-item.active { background: #eff4ff; color: var(--blue); border-left-color: var(--blue); }
+    .nav-icon { width: 17px; height: 17px; border: 1.5px solid currentColor; border-radius: 3px; display: inline-block; }
+
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .work-tabs { height: 42px; background: #fff; border-bottom: 1px solid var(--border); display: flex; align-items: end; padding-left: 12px; }
+    .work-tab { min-width: 110px; height: 42px; padding: 0 18px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #eef1f5; font-size: 13px; }
+    .work-tab.active { color: var(--blue); border-bottom: 2px solid var(--blue); }
+    .content { padding: 12px 14px 14px; overflow: auto; }
+    .page { min-height: calc(100vh - 116px); background: #fff; border-radius: 4px; box-shadow: 0 1px 5px rgba(21, 47, 90, .07); padding: 0 16px 14px; }
+    .page-head { height: 54px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .back { border: 0; background: transparent; color: var(--blue); padding: 5px 3px; }
+    .crumb { color: var(--muted); font-size: 13px; }
+    .page-title { font-size: 16px; font-weight: 600; }
+    .head-note { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+    .filter-card { margin-top: 14px; border: 1px solid var(--border); background: #fbfcfe; padding: 15px 14px 12px; }
+    .form-grid { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(300px, 1.2fr) minmax(430px, 1.8fr); gap: 14px; align-items: end; }
+    .field label { display: block; font-size: 13px; margin-bottom: 7px; color: #414b5e; }
+    .required::before { content: "*"; color: var(--red); margin-right: 4px; }
+    .select, .input-shell { height: 34px; width: 100%; border: 1px solid #cfd6e2; border-radius: 2px; background: #fff; color: #384255; padding: 0 10px; outline: none; }
+    .select:focus, .input-shell:focus-within { border-color: #6b8df2; box-shadow: 0 0 0 2px rgba(65,102,232,.1); }
+    .input-shell { display: flex; align-items: center; padding: 3px 6px; gap: 6px; overflow: hidden; }
+    .chip { max-width: 135px; height: 25px; border: 1px solid #c8d7ff; color: #3559ca; background: #edf3ff; display: inline-flex; align-items: center; gap: 5px; padding: 0 7px; border-radius: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+    .chip button { border: 0; background: transparent; color: #6b7faa; padding: 0; }
+    .store-placeholder { color: #a5adba; font-size: 13px; flex: 1; }
+    .selector-trigger { margin-left: auto; border: 0; border-left: 1px solid var(--border); background: #fff; color: var(--blue); height: 26px; padding-left: 10px; }
+    .helper { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .filter-actions { display: flex; align-items: center; margin-top: 12px; gap: 8px; }
+    .btn { height: 32px; border-radius: 2px; padding: 0 15px; border: 1px solid #cbd3df; background: #fff; color: #4b5669; }
+    .btn.primary { background: var(--blue-weak); border-color: var(--blue-border); color: #315bcf; }
+    .btn.solid { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn:disabled { cursor: not-allowed; opacity: .48; }
+
+    .result-toolbar { min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 10px 0 8px; }
+    .summary { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+    .summary b { color: #33405a; font-size: 14px; }
+    .badge { padding: 3px 8px; border-radius: 10px; background: #f0f2f6; color: #69758a; }
+    .badge.yes { background: #eaf8f3; color: var(--green); }
+    .badge.no { background: #fff0f0; color: var(--red); }
+    .toolbar-spacer { flex: 1; }
+    .status-filter { display: flex; border: 1px solid #d4dae4; border-radius: 2px; overflow: hidden; }
+    .status-filter button { height: 29px; min-width: 50px; border: 0; border-right: 1px solid #d4dae4; background: #fff; color: #626e82; }
+    .status-filter button:last-child { border-right: 0; }
+    .status-filter button.active { background: var(--blue-weak); color: var(--blue); }
+
+    .table-wrap { width: 100%; overflow: auto; border: 1px solid var(--border); }
+    table { width: 100%; min-width: 1348px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+    th { height: 38px; text-align: left; padding: 0 9px; background: #f7f8fa; color: #4c5668; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-weight: 600; }
+    td { height: 42px; padding: 7px 9px; border-right: 1px solid #e6eaf0; border-bottom: 1px solid #e6eaf0; color: #3f495b; vertical-align: top; line-height: 1.5; }
+    tbody tr:hover { background: #f6f9ff; }
+    .center { text-align: center; }
+    .tag { display: inline-block; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+    .tag.yes { color: var(--green); background: #eaf8f3; }
+    .tag.no { color: var(--red); background: #fff0f0; }
+    .tag.trigger { color: #3c64d6; background: #edf3ff; margin-right: 4px; margin-bottom: 3px; }
+    .rule-link { color: #2e63d5; text-decoration: none; }
+    .reason { color: #c44b4b; }
+    .muted { color: #9aa3b1; }
+    .pager { height: 42px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 12px; color: #69758a; }
+    .page-num { min-width: 28px; height: 28px; border: 1px solid var(--blue); color: #fff; background: var(--blue); border-radius: 2px; }
+
+    .empty { border: 1px dashed #d5dce7; height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #98a2b1; gap: 8px; }
+    .empty strong { color: #59657a; font-size: 14px; }
+
+    .overlay { position: fixed; inset: 0; background: rgba(24,33,51,.34); z-index: 20; display: none; align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .modal { width: 880px; max-height: 690px; background: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.18); border-radius: 3px; display: flex; flex-direction: column; }
+    .modal-head { height: 50px; display: flex; align-items: center; padding: 0 18px; border-bottom: 1px solid var(--border); }
+    .modal-title { font-size: 16px; font-weight: 600; }
+    .modal-close { margin-left: auto; border: 0; background: transparent; color: #7e899b; font-size: 22px; }
+    .modal-body { padding: 14px 16px; overflow: auto; }
+    .batch-box { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px; background: #f7f9fc; border: 1px solid #e2e7ef; }
+    .batch-box textarea { height: 62px; resize: none; padding: 8px 10px; border: 1px solid #cfd6e2; outline: 0; line-height: 1.5; }
+    .batch-note { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+    .store-search { margin: 12px 0 8px; display: flex; gap: 8px; }
+    .store-search input { width: 330px; height: 32px; border: 1px solid #cfd6e2; padding: 0 9px; }
+    .store-table { min-width: 0; }
+    .store-table th, .store-table td { height: 36px; }
+    .selected-line { margin-top: 10px; font-size: 12px; color: #69758a; }
+    .modal-foot { min-height: 54px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 0 16px; border-top: 1px solid var(--border); }
+
+    .toast { position: fixed; top: 62px; left: 50%; transform: translateX(-50%) translateY(-10px); padding: 9px 16px; background: rgba(42,52,71,.94); color: #fff; border-radius: 3px; font-size: 13px; opacity: 0; pointer-events: none; transition: .2s ease; z-index: 50; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">新零帮</span><span class="app-grid">▦</span></div>
+    <input class="global-search" placeholder="搜索">
+    <div class="top-spacer"></div>
+    <div class="top-actions">
+      <span class="top-action">待办</span><span class="top-action">下载中心</span><span class="top-action">南京众丞－管理中心⌄</span><span>马正安_名称超...</span><span class="avatar">马</span>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="nav-item"><span class="nav-icon"></span>看板</div>
+      <div class="nav-item"><span class="nav-icon"></span>档案</div>
+      <div class="nav-item active"><span class="nav-icon"></span>配送</div>
+      <div class="nav-item"><span class="nav-icon"></span>采购</div>
+      <div class="nav-item"><span class="nav-icon"></span>库存</div>
+      <div class="nav-item"><span class="nav-icon"></span>批发</div>
+      <div class="nav-item"><span class="nav-icon"></span>零售</div>
+      <div class="nav-item"><span class="nav-icon"></span>数据</div>
+      <div class="nav-item"><span class="nav-icon"></span>价格</div>
+    </aside>
+
+    <main class="main">
+      <div class="work-tabs">
+        <div class="work-tab">ERP看板</div>
+        <div class="work-tab">门店订单</div>
+        <div class="work-tab active">自动统配规则</div>
+      </div>
+
+      <div class="content">
+        <section class="page">
+          <div class="page-head">
+            <button class="back" id="backButton">‹ 返回</button>
+            <span class="crumb">自动统配规则 /</span>
+            <span class="page-title">自动统配一键查询</span>
+            <span class="head-note">查询结果为当前时点预计结果，不生成自动统配单</span>
+          </div>
+
+          <div class="filter-card">
+            <div class="form-grid">
+              <div class="field">
+                <label class="required">组织</label>
+                <select class="select" id="orgSelect">
+                  <option value="wanhao">万好公司</option>
+                  <option value="wantuo">万拓公司</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>配送中心门店</label>
+                <select class="select" id="dcSelect"></select>
+                <div class="helper">不选择时，按所选门店的配送组织设置查询全部配送中心门店。</div>
+              </div>
+              <div class="field">
+                <label class="required">门店</label>
+                <div class="input-shell" id="storeInput">
+                  <span class="store-placeholder" id="storePlaceholder">请选择普通门店</span>
+                  <button class="selector-trigger" id="openStoreSelector">选择门店</button>
+                </div>
+                <div class="helper">支持按门店编码批量查询后多选，也支持在结果中手动勾选。</div>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn solid" id="queryButton">查询</button>
+              <button class="btn" id="resetButton">重置</button>
+              <button class="btn primary" id="exportButton">导出</button>
+            </div>
+          </div>
+
+          <div id="resultArea"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="overlay" id="storeOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="storeModalTitle">
+      <div class="modal-head">
+        <span class="modal-title" id="storeModalTitle">选择门店</span>
+        <button class="modal-close" id="closeStoreSelector">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="batch-box">
+          <textarea id="batchCodes" placeholder="请输入门店编码，支持换行、逗号或空格分隔，例如：&#10;WH001&#10;WH002"></textarea>
+          <button class="btn primary" id="batchSearch">批量查询</button>
+          <div class="batch-note">只查询当前组织及已选配送中心门店覆盖的普通门店，匹配成功后自动勾选。</div>
+        </div>
+        <div class="store-search">
+          <input id="storeKeyword" placeholder="门店编码 / 门店名称">
+          <button class="btn" id="storeSearchButton">查询</button>
+        </div>
+        <div class="table-wrap">
+          <table class="store-table">
+            <colgroup><col style="width:56px"><col style="width:150px"><col style="width:230px"><col style="width:220px"><col></colgroup>
+            <thead><tr><th class="center">选择</th><th>门店编码</th><th>门店名称</th><th>所属组织</th><th>配送中心门店</th></tr></thead>
+            <tbody id="storeTableBody"></tbody>
+          </table>
+        </div>
+        <div class="selected-line" id="selectedLine">已选择 0 家门店</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="cancelStoreSelector">取消</button>
+        <button class="btn solid" id="confirmStores">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const orgs = {
+      wanhao: {
+        name: "万好公司",
+        dcs: [
+          { id: "dc-nanning", code: "DC001", name: "南宁配送中心门店" },
+          { id: "dc-haikou", code: "DC002", name: "海口配送中心门店" }
+        ],
+        stores: [
+          { id: "s1", code: "WH001", name: "万好测试店001", dcs: ["dc-nanning", "dc-haikou"] },
+          { id: "s2", code: "WH002", name: "万好测试店002", dcs: ["dc-nanning"] },
+          { id: "s3", code: "WH003", name: "万好测试店003", dcs: ["dc-nanning"] },
+          { id: "s4", code: "WH004", name: "万好测试店004", dcs: ["dc-haikou"] }
+        ]
+      },
+      wantuo: {
+        name: "万拓公司",
+        dcs: [{ id: "dc-guiyang", code: "DC101", name: "贵阳配送中心门店" }],
+        stores: [
+          { id: "s5", code: "WT001", name: "万拓测试店001", dcs: ["dc-guiyang"] },
+          { id: "s6", code: "WT002", name: "万拓测试店002", dcs: ["dc-guiyang"] }
+        ]
+      }
+    };
+
+    const sampleRows = [
+      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"新品首配规则", triggers:["新品","首次入库"], qty:1, yes:true, reason:"—" },
+      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010002", itemName:"海盐夹心脆 108g", rule:"新品首配规则", triggers:["首次入库"], qty:0, yes:false, reason:"近365天内已主动下单；一年内已自动统配" },
+      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010003", itemName:"芝士玉米脆 76g", rule:"新品首配规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
+      { store:"WH001", storeName:"万好测试店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010004", itemName:"蜂蜜黄油薯片 68g", rule:"新品首配规则", triggers:["新品"], qty:0, yes:false, reason:"商品已停售，当前规则不允许停售商品统配；配送价格为0" },
+      { store:"WH001", storeName:"万好测试店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020001", itemName:"椰香薄脆 100g", rule:"海口新品统配", triggers:["首次入库"], qty:2, yes:true, reason:"—" },
+      { store:"WH001", storeName:"万好测试店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020002", itemName:"咖啡味威化 112g", rule:"海口新品统配", triggers:["新品","首次入库"], qty:0, yes:false, reason:"命中自动排除规则“海口仓咖啡品类排除”；发货门店可用库存不足" },
+      { store:"WH002", storeName:"万好测试店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"门店标签新品规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
+      { store:"WH002", storeName:"万好测试店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010005", itemName:"黑糖燕麦酥 120g", rule:"门店标签新品规则", triggers:["首次入库"], qty:0, yes:false, reason:"商品不在自动统配规则商品范围；门店近7天PSD不满足自动统配条件" },
+      { store:"WH003", storeName:"万好测试店003", dc:"DC001", dcName:"南宁配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true },
+      { store:"WH004", storeName:"万好测试店004", dc:"DC002", dcName:"海口配送中心门店", item:"10020003", itemName:"芒果冻干 35g", rule:"海口新品统配", triggers:["新品"], qty:0, yes:false, reason:"商品已停止要货，当前规则不允许停止要货商品统配", storeLevel:false },
+      { store:"WT001", storeName:"万拓测试店001", dc:"DC101", dcName:"贵阳配送中心门店", item:"20010001", itemName:"麻辣土豆片 75g", rule:"贵阳首次入库规则", triggers:["首次入库"], qty:1, yes:true, reason:"—" },
+      { store:"WT002", storeName:"万拓测试店002", dc:"DC101", dcName:"贵阳配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true }
+    ];
+
+    const orgSelect = document.getElementById("orgSelect");
+    const dcSelect = document.getElementById("dcSelect");
+    const storeOverlay = document.getElementById("storeOverlay");
+    const storeTableBody = document.getElementById("storeTableBody");
+    const storePlaceholder = document.getElementById("storePlaceholder");
+    const storeInput = document.getElementById("storeInput");
+    const resultArea = document.getElementById("resultArea");
+    const selectedLine = document.getElementById("selectedLine");
+    const toast = document.getElementById("toast");
+    let selectedStores = ["s1", "s2", "s3"];
+    let tempSelected = new Set(selectedStores);
+    let statusFilter = "all";
+    let currentRows = [];
+    let storeKeyword = "";
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function selectedOrg() { return orgs[orgSelect.value]; }
+    function selectedDc() { return selectedOrg().dcs.find(dc => dc.id === dcSelect.value); }
+    function dcByCode(code) { return selectedOrg().dcs.find(dc => dc.code === code); }
+
+    function renderDcOptions() {
+      const old = dcSelect.value;
+      dcSelect.innerHTML = '<option value="">全部（按门店配送组织设置）</option>' + selectedOrg().dcs.map(dc => `<option value="${dc.id}">${dc.code}｜${dc.name}</option>`).join("");
+      if (selectedOrg().dcs.some(dc => dc.id === old)) dcSelect.value = old;
+    }
+
+    function availableStores() {
+      const dc = dcSelect.value;
+      return selectedOrg().stores.filter(store => !dc || store.dcs.includes(dc));
+    }
+
+    function renderStoreChips() {
+      [...storeInput.querySelectorAll(".chip")].forEach(node => node.remove());
+      const stores = selectedOrg().stores.filter(s => selectedStores.includes(s.id));
+      storePlaceholder.style.display = stores.length ? "none" : "inline";
+      stores.slice(0, 2).forEach(store => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.innerHTML = `<span>${store.code}｜${store.name}</span><button data-remove="${store.id}">×</button>`;
+        storeInput.insertBefore(chip, document.getElementById("openStoreSelector"));
+      });
+      if (stores.length > 2) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = `+${stores.length - 2}`;
+        storeInput.insertBefore(chip, document.getElementById("openStoreSelector"));
+      }
+      storeInput.querySelectorAll("[data-remove]").forEach(btn => btn.addEventListener("click", event => {
+        event.preventDefault();
+        selectedStores = selectedStores.filter(id => id !== btn.dataset.remove);
+        renderStoreChips();
+      }));
+    }
+
+    function renderStoreTable() {
+      const stores = availableStores().filter(store => !storeKeyword || `${store.code}${store.name}`.toLowerCase().includes(storeKeyword.toLowerCase()));
+      storeTableBody.innerHTML = stores.map(store => {
+        const dcNames = store.dcs.map(id => selectedOrg().dcs.find(dc => dc.id === id)?.name).filter(Boolean).join("、");
+        return `<tr>
+          <td class="center"><input type="checkbox" data-store-check="${store.id}" ${tempSelected.has(store.id) ? "checked" : ""}></td>
+          <td>${store.code}</td><td>${store.name}</td><td>${selectedOrg().name}</td><td>${dcNames}</td>
+        </tr>`;
+      }).join("");
+      storeTableBody.querySelectorAll("[data-store-check]").forEach(box => box.addEventListener("change", () => {
+        box.checked ? tempSelected.add(box.dataset.storeCheck) : tempSelected.delete(box.dataset.storeCheck);
+        selectedLine.textContent = `已选择 ${tempSelected.size} 家门店`;
+      }));
+      selectedLine.textContent = `已选择 ${tempSelected.size} 家门店`;
+    }
+
+    function openStoreSelector() {
+      tempSelected = new Set(selectedStores.filter(id => availableStores().some(store => store.id === id)));
+      storeKeyword = "";
+      document.getElementById("storeKeyword").value = "";
+      document.getElementById("batchCodes").value = "";
+      renderStoreTable();
+      storeOverlay.classList.add("open");
+      storeOverlay.setAttribute("aria-hidden", "false");
+    }
+
+    function closeStoreSelector() {
+      storeOverlay.classList.remove("open");
+      storeOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function getQueryRows() {
+      const stores = selectedOrg().stores.filter(store => selectedStores.includes(store.id));
+      const wantedDcs = dcSelect.value ? [selectedDc()] : selectedOrg().dcs;
+      const combos = stores.flatMap(store => wantedDcs.filter(dc => store.dcs.includes(dc.id)).map(dc => ({store, dc})));
+      return sampleRows.filter(row => combos.some(combo => combo.store.code === row.store && combo.dc.code === row.dc));
+    }
+
+    function renderResults() {
+      const rows = statusFilter === "all" ? currentRows : currentRows.filter(row => statusFilter === "yes" ? row.yes : !row.yes);
+      if (!currentRows.length) {
+        resultArea.innerHTML = `<div class="empty"><strong>请选择组织和门店后查询</strong><span>配送中心门店为空时，将按门店配送组织设置展开查询。</span></div>`;
+        return;
+      }
+      const storeCount = new Set(currentRows.map(row => row.store)).size;
+      const dcCount = new Set(currentRows.map(row => row.dc)).size;
+      const yesCount = currentRows.filter(row => row.yes).length;
+      const noCount = currentRows.length - yesCount;
+      resultArea.innerHTML = `
+        <div class="result-toolbar">
+          <div class="summary"><span>查询结果</span><b>${currentRows.length}</b><span>条</span><span class="badge">${storeCount} 家门店</span><span class="badge">${dcCount} 个配送中心门店</span><span class="badge yes">预计统配 ${yesCount}</span><span class="badge no">不统配 ${noCount}</span></div>
+          <div class="toolbar-spacer"></div>
+          <span class="muted">是否统配</span>
+          <div class="status-filter">
+            <button data-filter="all" class="${statusFilter === "all" ? "active" : ""}">全部</button>
+            <button data-filter="yes" class="${statusFilter === "yes" ? "active" : ""}">是</button>
+            <button data-filter="no" class="${statusFilter === "no" ? "active" : ""}">否</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width:48px"><col style="width:88px"><col style="width:125px"><col style="width:92px"><col style="width:140px"><col style="width:98px"><col style="width:160px"><col style="width:142px"><col style="width:116px"><col style="width:92px"><col style="width:76px"><col style="width:265px">
+            </colgroup>
+            <thead><tr><th>序号</th><th>门店编码</th><th>门店名称</th><th>配送中心编码</th><th>配送中心门店</th><th>商品代码</th><th>商品名称</th><th>自动统配规则名称</th><th>命中条件</th><th>预计统配数量</th><th>是否统配</th><th>不统配原因</th></tr></thead>
+            <tbody>${rows.map((row, index) => `<tr>
+              <td class="center">${index + 1}</td>
+              <td>${row.store}</td><td>${row.storeName}</td><td>${row.dc}</td><td>${row.dcName}</td>
+              <td>${row.item}</td><td>${row.itemName}</td><td>${row.rule === "—" ? '<span class="muted">—</span>' : `<a class="rule-link" href="#" data-rule="${row.rule}">${row.rule}</a>`}</td>
+              <td>${row.triggers.length ? row.triggers.map(trigger => `<span class="tag trigger">${trigger}</span>`).join("") : '<span class="muted">—</span>'}</td>
+              <td class="center">${row.qty}</td><td class="center"><span class="tag ${row.yes ? "yes" : "no"}">${row.yes ? "是" : "否"}</span></td>
+              <td class="${row.yes ? "muted" : "reason"}">${row.reason}</td>
+            </tr>`).join("")}</tbody>
+          </table>
+        </div>
+        <div class="pager"><span>共 ${rows.length} 条</span><button class="page-num">1</button><span>200 条/页</span></div>`;
+      resultArea.querySelectorAll("[data-filter]").forEach(button => button.addEventListener("click", () => { statusFilter = button.dataset.filter; renderResults(); }));
+      resultArea.querySelectorAll("[data-rule]").forEach(link => link.addEventListener("click", event => { event.preventDefault(); showToast(`示例：查看规则“${link.dataset.rule}”`); }));
+    }
+
+    function runQuery() {
+      if (!selectedStores.length) { showToast("请选择门店"); return; }
+      currentRows = getQueryRows();
+      statusFilter = "all";
+      renderResults();
+      showToast("查询完成，已保留全部符合与不符合商品行");
+    }
+
+    function exportCsv() {
+      if (!currentRows.length) { showToast("请先查询后导出"); return; }
+      const headers = ["组织","门店编码","门店名称","配送中心编码","配送中心门店","商品代码","商品名称","自动统配规则名称","命中条件","预计统配数量","是否统配","不统配原因"];
+      const lines = currentRows.map(row => [selectedOrg().name,row.store,row.storeName,row.dc,row.dcName,row.item,row.itemName,row.rule,row.triggers.join("、"),row.qty,row.yes?"是":"否",row.reason].map(value => `"${String(value).replaceAll('"','""')}"`).join(","));
+      const blob = new Blob(["\ufeff" + [headers.join(","), ...lines].join("\n")], {type:"text/csv;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "自动统配一键查询结果_示例.csv";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      showToast("已导出当前完整查询结果");
+    }
+
+    orgSelect.addEventListener("change", () => {
+      selectedStores = [];
+      currentRows = [];
+      renderDcOptions(); renderStoreChips(); renderResults();
+    });
+    dcSelect.addEventListener("change", () => {
+      selectedStores = selectedStores.filter(id => availableStores().some(store => store.id === id));
+      currentRows = [];
+      renderStoreChips(); renderResults();
+    });
+    document.getElementById("openStoreSelector").addEventListener("click", openStoreSelector);
+    document.getElementById("closeStoreSelector").addEventListener("click", closeStoreSelector);
+    document.getElementById("cancelStoreSelector").addEventListener("click", closeStoreSelector);
+    document.getElementById("confirmStores").addEventListener("click", () => { selectedStores = [...tempSelected]; renderStoreChips(); closeStoreSelector(); currentRows = []; renderResults(); });
+    document.getElementById("storeSearchButton").addEventListener("click", () => { storeKeyword = document.getElementById("storeKeyword").value.trim(); renderStoreTable(); });
+    document.getElementById("storeKeyword").addEventListener("keydown", event => { if (event.key === "Enter") { storeKeyword = event.target.value.trim(); renderStoreTable(); } });
+    document.getElementById("batchSearch").addEventListener("click", () => {
+      const codes = document.getElementById("batchCodes").value.split(/[\s,，;；]+/).map(code => code.trim().toUpperCase()).filter(Boolean);
+      const matched = availableStores().filter(store => codes.includes(store.code.toUpperCase()));
+      matched.forEach(store => tempSelected.add(store.id));
+      renderStoreTable();
+      showToast(codes.length ? `匹配 ${matched.length} 家门店，已自动勾选` : "请输入门店编码");
+    });
+    document.getElementById("queryButton").addEventListener("click", runQuery);
+    document.getElementById("resetButton").addEventListener("click", () => { dcSelect.value = ""; selectedStores = []; currentRows = []; statusFilter = "all"; renderStoreChips(); renderResults(); });
+    document.getElementById("exportButton").addEventListener("click", exportCsv);
+    document.getElementById("backButton").addEventListener("click", () => showToast("示例：返回自动统配规则列表"));
+    storeOverlay.addEventListener("click", event => { if (event.target === storeOverlay) closeStoreSelector(); });
+
+    renderDcOptions();
+    renderStoreChips();
+    currentRows = getQueryRows();
+    renderResults();
+  </script>
+</body>
+</html>
