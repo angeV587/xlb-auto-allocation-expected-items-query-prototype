@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>自动统配一键查询｜交互原型</title>
+  <title>仓店品关系查询｜交互原型</title>
   <style>
     :root {
       --blue: #4166e8;
@@ -125,6 +125,31 @@
 
     .toast { position: fixed; top: 62px; left: 50%; transform: translateX(-50%) translateY(-10px); padding: 9px 16px; background: rgba(42,52,71,.94); color: #fff; border-radius: 3px; font-size: 13px; opacity: 0; pointer-events: none; transition: .2s ease; z-index: 50; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .form-grid {grid-template-columns:190px minmax(235px,1fr) minmax(235px,1fr) auto}
+    .options {display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;font-size:13px}
+    .options label {display:flex;align-items:center;gap:5px}
+    .options input {accent-color:var(--blue);width:15px;height:15px}
+    .suboption {margin-left:22px;color:#566274}
+    .suboption:has(input:disabled) {color:#9ca3af}
+    .scope-note {margin-top:13px;font-size:12px;line-height:1.65;color:#5c687c}
+    .scope-note.simulated {background:#fff6e5;color:#82530d;padding:8px 10px;border-left:3px solid #d59120}
+    .result-toolbar h2{font-size:14px;margin:0;font-weight:600}
+    .result-toolbar {margin-top:12px}
+    .task-table {min-width:960px}
+    .task-table td{vertical-align:middle;overflow-wrap:anywhere;padding:12px 10px}
+    .task-table th {font-size:12px;white-space:nowrap}
+    .state-running{color:#315bcf}.state-done{color:#16835c}.state-error{color:#bd4b22}
+    .action {background:none;border:none;color:#315bcf;padding:5px 0;font-size:13px}
+    .result-note {font-size:12px;color:#657188;margin:12px 0;line-height:1.7}
+    .small {font-size:12px;color:#69768b;display:block;margin-top:4px}
+    .demo-note {margin-left:auto;font-size:12px;color:#758199}
+    .details-text {font-size:12px;line-height:1.8}
+    .task-empty{height:200px;text-align:center;color:#758199}
+    #notice {min-height:22px;color:#bd4b22;font-size:12px;padding-top:6px}
+    .mark {display:none}
+    body.annotated .mark {display:inline-block;background:#e6edff;border:1px solid #4266dc;color:#244ba6;font-size:12px;padding:4px 7px;margin:6px}
+    @media(max-width:1280px){.form-grid{grid-template-columns:160px 1fr 1fr auto}.summary{flex-wrap:wrap}.top-actions{gap:12px}}
   </style>
 </head>
 <body>
@@ -159,302 +184,157 @@
 
       <div class="content">
         <section class="page">
-          <div class="page-head">
-            <button class="back" id="backButton">‹ 自动统配规则</button>
-            <span class="crumb">/</span>
-            <span class="page-title">自动统配一键查询</span>
-          </div>
-
+          <div class="page-head"><span class="crumb">自动统配规则 /</span><span class="page-title">仓店品关系查询</span><span class="demo-note">交互演示 · 示例数据</span></div>
           <div class="filter-card">
-            <div class="form-grid">
-              <div class="field">
-                <label class="required">组织</label>
-                <select class="select" id="orgSelect">
-                  <option value="wanhao">示例组织A</option>
-                  <option value="wantuo">示例组织B</option>
-                </select>
+            <span class="mark">① 仓、店均单选，至少填写一个；自动识别三种场景</span>
+            <form id="queryForm">
+              <div class="form-grid">
+                <div class="field"><label class="required" for="org">组织</label><select id="org" class="select"><option value="A">示例组织A</option><option value="B">示例组织B</option></select></div>
+                <div class="field"><label for="warehouse">配送中心门店</label><select id="warehouse" class="select"></select></div>
+                <div class="field"><label for="store">门店</label><select id="store" class="select"></select></div>
+                <div class="filter-actions"><button class="btn solid" type="submit">提交查询</button><button class="btn" id="reset" type="button">重置</button></div>
               </div>
-              <div class="field">
-                <label>配送中心门店</label>
-                <select class="select" id="dcSelect"></select>
+              <div class="options">
+                <label><input id="allocation" type="checkbox">查询自动统配结果</label>
+                <label class="suboption"><input id="skipReceipt" type="checkbox" disabled>跳过首次入库检查，默认商品在仓库一定满足首次入库</label>
               </div>
-              <div class="field">
-                <label class="required">门店</label>
-                <div class="input-shell" id="storeInput">
-                  <span class="store-placeholder" id="storePlaceholder">请选择普通门店</span>
-                  <button class="selector-trigger" id="openStoreSelector">选择门店</button>
-                </div>
-              </div>
-              <div class="filter-actions">
-                <button class="btn solid" id="queryButton">查询</button>
-                <button class="btn" id="resetButton">重置</button>
-              </div>
-            </div>
+              <span class="mark">② 可选统配检查；取消上级勾选时，首次入库豁免同步取消</span>
+              <div id="scopeNote" class="scope-note"></div>
+              <div id="notice" role="status" aria-live="polite"></div>
+            </form>
           </div>
-
-          <div id="resultArea"></div>
+          <div class="result-toolbar"><h2>查询任务</h2><span class="small" style="margin:0">商品明细在任务完成后下载</span><div class="toolbar-spacer"></div><button class="btn primary" id="refresh">刷新</button></div>
+          <span class="mark">③ 页面只加载任务；查询完成后下载Excel，超时或失败支持按原条件重试</span>
+          <div class="table-wrap"><table class="task-table">
+            <colgroup><col style="width:12%"><col style="width:10%"><col style="width:23%"><col style="width:16%"><col style="width:13%"><col style="width:13%"><col style="width:8%"><col style="width:8%"></colgroup>
+            <thead><tr><th>任务编号</th><th>查询场景</th><th>查询条件</th><th>附加检查</th><th>创建时间</th><th>完成时间</th><th>任务状态</th><th>操作</th></tr></thead><tbody id="tasks"></tbody>
+          </table></div>
+          <p class="result-note" id="taskSummary"></p>
+          <p class="result-note">演示说明：示例任务模拟后台执行，提交后点击“刷新”查看结果；任务保存在当前浏览器中。下载为可打开的示例 .xlsx，真实大数据任务由生产后台执行。</p>
         </section>
       </div>
     </main>
   </div>
+<script>
+const $=id=>document.getElementById(id);
+const warehouses=[{id:'DC001',name:'示例默认仓',org:'A'},{id:'DC002',name:'示例非默认仓',org:'A'},{id:'DC003',name:'示例共享仓',org:'B'},{id:'DC004',name:'示例前置仓',org:'A'},{id:'DC005',name:'示例共享前置仓',org:'B'},{id:'DC006',name:'示例区域仓',org:'B'},{id:'DC007',name:'示例待配置仓',org:'A'}];
+const stores=[{id:'ST001',name:'示例门店001',org:'A'},{id:'ST002',name:'示例门店002',org:'A'},{id:'ST101',name:'示例门店101',org:'B'}];
+const products=[
+ {id:'P001',name:'示例苏打饼干',range:true,stopped:false,newProduct:true,receipt:true,history:[],price:3,stock:0},
+ {id:'P002',name:'示例燕麦酥',range:true,stopped:false,newProduct:false,receipt:false,history:[],price:3,stock:10},
+ {id:'P003',name:'示例夹心饼',range:true,stopped:false,newProduct:true,receipt:true,history:['主动下单','自动统配','手动统配'],price:4,stock:10},
+ {id:'P004',name:'示例停止要货商品',range:true,stopped:true,newProduct:true,receipt:true,history:[],price:3,stock:20},
+ {id:'P005',name:'示例范围外商品',range:false,stopped:false,newProduct:true,receipt:true,history:[],price:3,stock:20},
+ {id:'P006',name:'示例零价格商品',range:true,stopped:false,newProduct:true,receipt:true,history:[],price:0,stock:30}
+];
+const routes=[
+ {store:'ST001',order:'DC001',ship:'DC001',type:'默认仓',items:['P001','P002','P003','P004','P005','P006']},
+ {store:'ST001',order:'DC002',ship:'DC002',type:'非默认仓',items:['P002','P003']},
+ {store:'ST001',order:'DC002',ship:'DC003',type:'非默认仓；共享仓',items:['P001','P006']},
+ {store:'ST001',order:'DC004',ship:'DC004',type:'前置仓',items:['P002']},
+ {store:'ST001',order:'DC004',ship:'DC006',type:'前置仓；区域仓',items:['P003','P006']},
+ {store:'ST001',order:'DC005',ship:'DC005',type:'共享仓作为前置仓',items:['P001']},
+ {store:'ST001',order:'DC005',ship:'DC006',type:'共享仓作为前置仓；区域仓',items:['P002']},
+ {store:'ST002',order:'DC001',ship:'DC001',type:'默认仓',items:['P002','P006']},
+ {store:'ST101',order:'DC003',ship:'DC003',type:'默认仓；共享仓',items:['P001','P002']}
+];
+const KEY='xlb-warehouse-store-query-tasks-v2';
+const nameOf=(items,id)=>items.find(x=>x.id===id)?.name||id;
+const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=t=>t?new Date(t).toLocaleString('zh-CN',{hour12:false}):'—';
+const scenario=q=>q.warehouse&&q.store?'单仓单店':q.warehouse?'单仓所有店':'单店所有仓';
+const simulated=q=>q.warehouse&&q.store&&!routes.some(r=>r.store===q.store&&(r.order===q.warehouse||r.ship===q.warehouse));
+function readTasks(){try{const t=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(t))return t;}catch{} const now=Date.now();return [
+ {id:'CX-DEMO-003',q:{org:'A',warehouse:'DC001',store:'',allocation:true,skip:false},created:now-120000,completed:null,status:'查询超时',note:'示例超时任务，可手动重试'},
+ {id:'CX-DEMO-002',q:{org:'A',warehouse:'DC007',store:'ST001',allocation:true,skip:true},created:now-360000,completed:now-300000,status:'查询完成'},
+ {id:'CX-DEMO-001',q:{org:'A',warehouse:'',store:'ST001',allocation:false,skip:false},created:now-600000,completed:now-500000,status:'查询完成'}
+ ]; }
+let tasks=readTasks();
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks));}
+function options(){
+ $('warehouse').innerHTML='<option value="">不指定（查询单店所有仓）</option>'+warehouses.map(w=>'<option value="'+w.id+'">'+w.id+'｜'+w.name+'</option>').join('');
+ $('store').innerHTML='<option value="">不指定（查询单仓所有店）</option>'+stores.filter(s=>s.org===$('org').value).map(s=>'<option value="'+s.id+'">'+s.id+'｜'+s.name+'</option>').join('');
+}
+function formQuery(){return {org:$('org').value,warehouse:$('warehouse').value,store:$('store').value,allocation:$('allocation').checked,skip:$('skipReceipt').checked};}
+function change(){
+ const q=formQuery(); $('skipReceipt').disabled=!q.allocation; if(!q.allocation)$('skipReceipt').checked=false;
+ const simulation=simulated(q);$('scopeNote').className='scope-note'+(q.store&&q.warehouse?' simulated':'');
+ $('scopeNote').textContent=!q.warehouse&&!q.store?'请选择一个仓或一家门店。基础查询不检查库存、价格、下单日和余额。':
+ q.warehouse&&q.store?scenario(q)+'：所选仓补货范围视为全部商品。'+(simulation?'当前无配送组织关系，模拟该仓直接供货。':'已配置关系，沿用实际共享仓及区域仓路由。'):
+ scenario(q)+'：按实际供货关系查询，包含共享仓、前置仓及区域仓；基础查询不检查库存、价格、下单日和余额。';
+ $('notice').textContent='';
+}
+function rowsFor(q){
+ let candidates;
+ if(simulated(q)) candidates=[{store:q.store,order:q.warehouse,ship:q.warehouse,type:'模拟直接供货',items:products.map(p=>p.id)}];
+ else candidates=routes.filter(r=>(!q.store||r.store===q.store)&&(!q.warehouse||r.order===q.warehouse||r.ship===q.warehouse)).map(r=>({...r,items:q.store&&q.warehouse&&r.ship===q.warehouse?products.map(p=>p.id):r.items}));
+ const rows=[], seen=new Set();
+ for(const r of candidates)for(const id of r.items){
+  const p=products.find(p=>p.id===id);if(!p||!p.range||p.stopped)continue;
+  const key=[r.store,r.order,r.ship,id].join('|');if(seen.has(key))continue;seen.add(key);
+  const st=stores.find(s=>s.id===r.store);
+  let row=[st.id,st.name,'示例组织'+st.org,r.order,nameOf(warehouses,r.order),r.ship,nameOf(warehouses,r.ship),r.type,p.id,p.name,q.store&&q.warehouse?(simulated(q)?'模拟直接供货；所选仓补货范围为全品':'实际路由；所选仓补货范围为全品'):'实际关系'];
+  if(q.allocation){
+   const rule=r.store==='ST002'?'无':'示例自动统配规则';
+   const triggers=[...(p.newProduct?['新品']:[]),...((p.receipt||q.skip)?['首次入库']:[])];
+   const reasons=[];
+   if(p.history.length)reasons.push('在现有去重窗口内已有下单或统配记录');
+   if(rule==='无')reasons.push('门店未配置自动统配规则');
+   if(!triggers.length)reasons.push('不满足新品或首次入库条件');
+   if(p.price===0)reasons.push('统配价格为0');
+   if(p.stock===0)reasons.push('统配可用库存为0');
+   const state=p.history.length?'已有下单/统配记录':reasons.length?'不满足自动统配条件':'待触发自动统配';
+   row.push(state,p.history.join('；')||'无',rule,rule==='无'?'无':triggers.join('；')||'无',reasons.join('；'),q.skip?'跳过检查并视为满足':'按实际数据检查',state==='待触发自动统配'?1:0,'件');
+  } rows.push(row);
+ } return rows;
+}
+const baseHeaders=['门店代码','门店名称','门店所属组织','下单配送中心代码','下单配送中心名称','实际发货仓代码','实际发货仓名称','供货关系类型','商品代码','商品名称','查询口径'];
+const autoHeaders=['自动统配状态','历史记录类型','命中的自动统配规则','命中条件','不统配原因','首次入库检查方式','预计统配数量','配送单位'];
+function render(){
+ $('tasks').innerHTML=tasks.map(t=>'<tr><td>'+escapeHtml(t.id)+'</td><td>'+scenario(t.q)+'</td><td>'+escapeHtml('示例组织'+t.q.org)+'<span class="small">'+escapeHtml(t.q.warehouse?nameOf(warehouses,t.q.warehouse):'所有可下单仓')+'</span><span class="small">'+escapeHtml(t.q.store?nameOf(stores,t.q.store):'所有关联门店')+'</span></td><td>'+(!t.q.allocation?'不检查自动统配':'查询自动统配<span class="small">'+(t.q.skip?'首次入库视为满足':'首次入库按实际检查')+'</span>')+'</td><td>'+fmt(t.created)+'</td><td>'+fmt(t.completed)+'</td><td class="'+(t.status==='查询完成'?'state-done':t.status==='查询中'?'state-running':'state-error')+'">'+t.status+(t.note?'<span class="small">'+escapeHtml(t.note)+'</span>':'')+'</td><td>'+(t.status==='查询完成'?'<button class="action" data-download="'+t.id+'">下载Excel</button>':t.status==='查询中'?'—':'<button class="action" data-retry="'+t.id+'">重试</button>')+'</td></tr>').join('')||'<tr><td colspan="8" class="task-empty">暂无查询任务</td></tr>';
+ $('taskSummary').textContent='共 '+tasks.length+' 条任务';
+ document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(tasks.find(t=>t.id===b.dataset.download)));
+ document.querySelectorAll('[data-retry]').forEach(b=>b.onclick=()=>{const t=tasks.find(t=>t.id===b.dataset.retry);t.status='查询中';t.completed=null;t.ready=Date.now()+2500;t.note='';save();render();});
+}
+function refresh(){for(const t of tasks)if(t.status==='查询中'&&Date.now()>=t.ready){t.status='查询完成';t.completed=Date.now();t.note='';}save();render();}
+$('queryForm').onsubmit=e=>{e.preventDefault();const q=formQuery();if(!q.warehouse&&!q.store){$('notice').textContent='请选择配送中心门店或门店，至少填写一项';return;}
+ if(tasks.some(t=>t.status==='查询中'&&JSON.stringify(t.q)===JSON.stringify(q))){$('notice').textContent='相同条件的任务正在查询中，请刷新查看';return;}
+ const now=Date.now();tasks.unshift({id:'CX'+now.toString().slice(-10),q,created:now,completed:null,status:'查询中',ready:now+2500});save();render();$('notice').textContent='查询任务已提交，可稍后刷新查看状态。';};
+$('org').onchange=()=>{options();change();};
+['warehouse','store','allocation','skipReceipt'].forEach(id=>$(id).onchange=change);
+$('reset').onclick=()=>{$('warehouse').value='';$('store').value='';$('allocation').checked=false;change();};
+$('refresh').onclick=refresh;
 
-  <div class="overlay" id="storeOverlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="storeModalTitle">
-      <div class="modal-head">
-        <span class="modal-title" id="storeModalTitle">选择门店</span>
-        <button class="modal-close" id="closeStoreSelector">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="selector-search">
-          <input id="storeKeyword" placeholder="门店编码 / 门店名称；多个编码用逗号、空格或换行分隔">
-          <button class="btn primary" id="batchSearch">查询</button>
-          <small>查询范围为当前组织及已选配送中心门店覆盖的普通门店；多个门店编码匹配成功后自动勾选。</small>
-        </div>
-        <div class="table-wrap">
-          <table class="store-table">
-            <colgroup><col style="width:56px"><col style="width:150px"><col style="width:230px"><col></colgroup>
-            <thead><tr><th class="center">选择</th><th>门店编码</th><th>门店名称</th><th>配送中心门店</th></tr></thead>
-            <tbody id="storeTableBody"></tbody>
-          </table>
-        </div>
-        <div class="selected-line" id="selectedLine">已选择 0 家门店</div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn" id="cancelStoreSelector">取消</button>
-        <button class="btn solid" id="confirmStores">确定</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
-  <script>
-    const orgs = {
-      wanhao: {
-        name: "示例组织A",
-        dcs: [
-          { id: "dc-nanning", code: "DC001", name: "南宁配送中心门店" },
-          { id: "dc-haikou", code: "DC002", name: "海口配送中心门店" }
-        ],
-        stores: [
-          { id: "s1", code: "ST001", name: "示例门店001", dcs: ["dc-nanning", "dc-haikou"] },
-          { id: "s2", code: "ST002", name: "示例门店002", dcs: ["dc-nanning"] },
-          { id: "s3", code: "ST003", name: "示例门店003", dcs: ["dc-nanning"] },
-          { id: "s4", code: "ST004", name: "示例门店004", dcs: ["dc-haikou"] }
-        ]
-      },
-      wantuo: {
-        name: "示例组织B",
-        dcs: [{ id: "dc-guiyang", code: "DC101", name: "贵阳配送中心门店" }],
-        stores: [
-          { id: "s5", code: "ST101", name: "示例门店101", dcs: ["dc-guiyang"] },
-          { id: "s6", code: "ST102", name: "示例门店102", dcs: ["dc-guiyang"] }
-        ]
-      }
-    };
-
-    const sampleRows = [
-      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"新品首配规则", triggers:["新品","首次入库"], qty:1, yes:true, reason:"—" },
-      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010002", itemName:"海盐夹心脆 108g", rule:"新品首配规则", triggers:["首次入库"], qty:0, yes:false, reason:"近365天内已主动下单；一年内已自动统配" },
-      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010003", itemName:"芝士玉米脆 76g", rule:"新品首配规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
-      { store:"ST001", storeName:"示例门店001", dc:"DC001", dcName:"南宁配送中心门店", item:"10010004", itemName:"蜂蜜黄油薯片 68g", rule:"新品首配规则", triggers:["新品"], qty:0, yes:false, reason:"商品已停售，当前规则不允许停售商品统配；配送价格为0" },
-      { store:"ST001", storeName:"示例门店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020001", itemName:"椰香薄脆 100g", rule:"海口新品统配", triggers:["首次入库"], qty:2, yes:true, reason:"—" },
-      { store:"ST001", storeName:"示例门店001", dc:"DC002", dcName:"海口配送中心门店", item:"10020002", itemName:"咖啡味威化 112g", rule:"海口新品统配", triggers:["新品","首次入库"], qty:0, yes:false, reason:"命中自动排除规则“海口仓咖啡品类排除”；发货门店可用库存不足" },
-      { store:"ST002", storeName:"示例门店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010001", itemName:"青柠味苏打饼干 90g", rule:"门店标签新品规则", triggers:["新品"], qty:1, yes:true, reason:"—" },
-      { store:"ST002", storeName:"示例门店002", dc:"DC001", dcName:"南宁配送中心门店", item:"10010005", itemName:"黑糖燕麦酥 120g", rule:"门店标签新品规则", triggers:["首次入库"], qty:0, yes:false, reason:"商品不在自动统配规则商品范围；门店近7天PSD不满足自动统配条件" },
-      { store:"ST003", storeName:"示例门店003", dc:"DC001", dcName:"南宁配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true },
-      { store:"ST004", storeName:"示例门店004", dc:"DC002", dcName:"海口配送中心门店", item:"10020003", itemName:"芒果冻干 35g", rule:"海口新品统配", triggers:["新品"], qty:0, yes:false, reason:"商品已停止要货，当前规则不允许停止要货商品统配", storeLevel:false },
-      { store:"ST101", storeName:"示例门店101", dc:"DC101", dcName:"贵阳配送中心门店", item:"20010001", itemName:"麻辣土豆片 75g", rule:"贵阳首次入库规则", triggers:["首次入库"], qty:1, yes:true, reason:"—" },
-      { store:"ST102", storeName:"示例门店102", dc:"DC101", dcName:"贵阳配送中心门店", item:"—", itemName:"—", rule:"—", triggers:[], qty:0, yes:false, reason:"门店未配置自动统配规则", storeLevel:true }
-    ];
-
-    const orgSelect = document.getElementById("orgSelect");
-    const dcSelect = document.getElementById("dcSelect");
-    const storeOverlay = document.getElementById("storeOverlay");
-    const storeTableBody = document.getElementById("storeTableBody");
-    const storePlaceholder = document.getElementById("storePlaceholder");
-    const storeInput = document.getElementById("storeInput");
-    const resultArea = document.getElementById("resultArea");
-    const selectedLine = document.getElementById("selectedLine");
-    const toast = document.getElementById("toast");
-    let selectedStores = ["s1", "s2", "s3"];
-    let tempSelected = new Set(selectedStores);
-    let statusFilter = "all";
-    let currentRows = [];
-    let storeKeyword = "";
-
-    function showToast(message) {
-      toast.textContent = message;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 1800);
-    }
-
-    function selectedOrg() { return orgs[orgSelect.value]; }
-    function selectedDc() { return selectedOrg().dcs.find(dc => dc.id === dcSelect.value); }
-    function renderDcOptions() {
-      const old = dcSelect.value;
-      dcSelect.innerHTML = '<option value="">全部（按门店配送组织设置）</option>' + selectedOrg().dcs.map(dc => `<option value="${dc.id}">${dc.code}｜${dc.name}</option>`).join("");
-      if (selectedOrg().dcs.some(dc => dc.id === old)) dcSelect.value = old;
-    }
-
-    function availableStores() {
-      const dc = dcSelect.value;
-      return selectedOrg().stores.filter(store => !dc || store.dcs.includes(dc));
-    }
-
-    function renderStoreChips() {
-      [...storeInput.querySelectorAll(".select-summary")].forEach(node => node.remove());
-      const stores = selectedOrg().stores.filter(s => selectedStores.includes(s.id));
-      storePlaceholder.style.display = stores.length ? "none" : "inline";
-      if (!stores.length) return;
-      const summary = document.createElement("span");
-      summary.className = "select-summary";
-      summary.textContent = `已选择 ${stores.length} 家门店`;
-      storeInput.insertBefore(summary, document.getElementById("openStoreSelector"));
-    }
-
-    function renderStoreTable() {
-      const stores = availableStores().filter(store => !storeKeyword || `${store.code}${store.name}`.toLowerCase().includes(storeKeyword.toLowerCase()));
-      storeTableBody.innerHTML = stores.map(store => {
-        const dcNames = store.dcs.map(id => selectedOrg().dcs.find(dc => dc.id === id)?.name).filter(Boolean).join("、");
-        return `<tr>
-          <td class="center"><input type="checkbox" data-store-check="${store.id}" ${tempSelected.has(store.id) ? "checked" : ""}></td>
-          <td>${store.code}</td><td>${store.name}</td><td>${dcNames}</td>
-        </tr>`;
-      }).join("");
-      storeTableBody.querySelectorAll("[data-store-check]").forEach(box => box.addEventListener("change", () => {
-        box.checked ? tempSelected.add(box.dataset.storeCheck) : tempSelected.delete(box.dataset.storeCheck);
-        selectedLine.textContent = `已选择 ${tempSelected.size} 家门店`;
-      }));
-      selectedLine.textContent = `已选择 ${tempSelected.size} 家门店`;
-    }
-
-    function openStoreSelector() {
-      tempSelected = new Set(selectedStores.filter(id => availableStores().some(store => store.id === id)));
-      storeKeyword = "";
-      document.getElementById("storeKeyword").value = "";
-      renderStoreTable();
-      storeOverlay.classList.add("open");
-      storeOverlay.setAttribute("aria-hidden", "false");
-    }
-
-    function closeStoreSelector() {
-      storeOverlay.classList.remove("open");
-      storeOverlay.setAttribute("aria-hidden", "true");
-    }
-
-    function getQueryRows() {
-      const stores = selectedOrg().stores.filter(store => selectedStores.includes(store.id));
-      const wantedDcs = dcSelect.value ? [selectedDc()] : selectedOrg().dcs;
-      const combos = stores.flatMap(store => wantedDcs.filter(dc => store.dcs.includes(dc.id)).map(dc => ({store, dc})));
-      return sampleRows.filter(row => combos.some(combo => combo.store.code === row.store && combo.dc.code === row.dc));
-    }
-
-    function renderResults() {
-      const rows = statusFilter === "all" ? currentRows : currentRows.filter(row => statusFilter === "yes" ? row.yes : !row.yes);
-      if (!currentRows.length) {
-        resultArea.innerHTML = `<div class="empty"><strong>请选择组织和门店后查询</strong><span>配送中心门店为空时，将按门店配送组织设置展开查询。</span></div>`;
-        return;
-      }
-      const yesCount = currentRows.filter(row => row.yes).length;
-      const noCount = currentRows.length - yesCount;
-      resultArea.innerHTML = `
-        <div class="result-toolbar">
-          <div class="summary"><span>查询结果</span><b>${currentRows.length}</b><span>条</span><span class="badge yes">预计统配 ${yesCount}</span><span class="badge no">不统配 ${noCount}</span><span>结果按查询时点试算，不生成单据</span></div>
-          <div class="toolbar-spacer"></div>
-          <span class="muted">是否统配</span>
-          <div class="status-filter">
-            <button data-filter="all" class="${statusFilter === "all" ? "active" : ""}">全部</button>
-            <button data-filter="yes" class="${statusFilter === "yes" ? "active" : ""}">是</button>
-            <button data-filter="no" class="${statusFilter === "no" ? "active" : ""}">否</button>
-          </div>
-          <button class="btn primary" id="exportResultButton">导出</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <colgroup>
-              <col style="width:45px"><col style="width:115px"><col style="width:145px"><col style="width:165px"><col style="width:125px"><col style="width:100px"><col style="width:70px"><col style="width:65px"><col style="width:250px">
-            </colgroup>
-            <thead><tr><th>序号</th><th>门店</th><th>配送中心门店</th><th>商品</th><th>统配规则</th><th>命中条件</th><th>预计数量</th><th>结论</th><th>不统配原因</th></tr></thead>
-            <tbody>${rows.map((row, index) => `<tr>
-              <td class="center">${index + 1}</td>
-              <td><div class="cell-main">${row.storeName}</div><div class="cell-sub">${row.store}</div></td>
-              <td><div class="cell-main">${row.dcName}</div><div class="cell-sub">${row.dc}</div></td>
-              <td>${row.item === "—" ? '<span class="muted">—</span>' : `<div class="cell-main">${row.itemName}</div><div class="cell-sub">${row.item}</div>`}</td>
-              <td>${row.rule === "—" ? '<span class="muted">—</span>' : `<a class="rule-link" href="#" data-rule="${row.rule}">${row.rule}</a>`}</td>
-              <td>${row.triggers.length ? row.triggers.map(trigger => `<span class="tag trigger">${trigger}</span>`).join("") : '<span class="muted">—</span>'}</td>
-              <td class="center">${row.qty}</td><td class="center"><span class="tag ${row.yes ? "yes" : "no"}">${row.yes ? "是" : "否"}</span></td>
-              <td class="${row.yes ? "muted" : "reason"}">${row.reason}</td>
-            </tr>`).join("")}</tbody>
-          </table>
-        </div>
-        <div class="pager"><span>共 ${rows.length} 条</span><button class="page-num">1</button><span>200 条/页</span></div>`;
-      resultArea.querySelectorAll("[data-filter]").forEach(button => button.addEventListener("click", () => { statusFilter = button.dataset.filter; renderResults(); }));
-      resultArea.querySelectorAll("[data-rule]").forEach(link => link.addEventListener("click", event => { event.preventDefault(); showToast(`示例：查看规则“${link.dataset.rule}”`); }));
-      document.getElementById("exportResultButton").addEventListener("click", exportCsv);
-    }
-
-    function runQuery() {
-      if (!selectedStores.length) { showToast("请选择门店"); return; }
-      currentRows = getQueryRows();
-      statusFilter = "all";
-      renderResults();
-      showToast("查询完成，已保留全部符合与不符合商品行");
-    }
-
-    function exportCsv() {
-      if (!currentRows.length) { showToast("请先查询后导出"); return; }
-      const headers = ["组织","门店编码","门店名称","配送中心编码","配送中心门店","商品代码","商品名称","自动统配规则名称","命中条件","预计统配数量","是否统配","不统配原因"];
-      const lines = currentRows.map(row => [selectedOrg().name,row.store,row.storeName,row.dc,row.dcName,row.item,row.itemName,row.rule,row.triggers.join("、"),row.qty,row.yes?"是":"否",row.reason].map(value => `"${String(value).replaceAll('"','""')}"`).join(","));
-      const blob = new Blob(["\ufeff" + [headers.join(","), ...lines].join("\n")], {type:"text/csv;charset=utf-8"});
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "自动统配一键查询结果_示例.csv";
-      anchor.click();
-      URL.revokeObjectURL(url);
-      showToast("已导出当前完整查询结果");
-    }
-
-    orgSelect.addEventListener("change", () => {
-      selectedStores = [];
-      currentRows = [];
-      renderDcOptions(); renderStoreChips(); renderResults();
-    });
-    dcSelect.addEventListener("change", () => {
-      selectedStores = selectedStores.filter(id => availableStores().some(store => store.id === id));
-      currentRows = [];
-      renderStoreChips(); renderResults();
-    });
-    document.getElementById("openStoreSelector").addEventListener("click", openStoreSelector);
-    document.getElementById("closeStoreSelector").addEventListener("click", closeStoreSelector);
-    document.getElementById("cancelStoreSelector").addEventListener("click", closeStoreSelector);
-    document.getElementById("confirmStores").addEventListener("click", () => { selectedStores = [...tempSelected]; renderStoreChips(); closeStoreSelector(); currentRows = []; renderResults(); });
-    document.getElementById("storeKeyword").addEventListener("keydown", event => { if (event.key === "Enter") document.getElementById("batchSearch").click(); });
-    document.getElementById("batchSearch").addEventListener("click", () => {
-      const value = document.getElementById("storeKeyword").value.trim();
-      const codes = value.split(/[\s,，;；]+/).map(code => code.trim().toUpperCase()).filter(Boolean);
-      const matched = availableStores().filter(store => codes.includes(store.code.toUpperCase()));
-      if (matched.length) {
-        matched.forEach(store => tempSelected.add(store.id));
-        storeKeyword = "";
-        renderStoreTable();
-        showToast(`匹配 ${matched.length} 家门店，已自动勾选`);
-        return;
-      }
-      storeKeyword = value;
-      renderStoreTable();
-      if (!value) showToast("请输入门店编码或名称");
-    });
-    document.getElementById("queryButton").addEventListener("click", runQuery);
-    document.getElementById("resetButton").addEventListener("click", () => { dcSelect.value = ""; selectedStores = []; currentRows = []; statusFilter = "all"; renderStoreChips(); renderResults(); });
-    document.getElementById("backButton").addEventListener("click", () => showToast("示例：返回自动统配规则列表"));
-    storeOverlay.addEventListener("click", event => { if (event.target === storeOverlay) closeStoreSelector(); });
-
-    renderDcOptions();
-    renderStoreChips();
-    currentRows = getQueryRows();
-    renderResults();
-  </script>
-</body>
-</html>
+// Minimal standards-based XLSX writer: ZIP container with inline-string worksheets, no external dependencies.
+const enc=new TextEncoder();
+function crc32(bytes){let crc=0xffffffff;for(const b of bytes){crc^=b;for(let j=0;j<8;j++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
+function zip(files){
+ let chunks=[],central=[],offset=0;
+ const put=(n,size)=>{const b=new Uint8Array(size);const v=new DataView(b.buffer);size===2?v.setUint16(0,n,true):v.setUint32(0,n,true);return b;};
+ const join=parts=>{const all=new Uint8Array(parts.reduce((s,p)=>s+p.length,0));let i=0;for(const p of parts){all.set(p,i);i+=p.length;}return all;};
+ for(const [name,content]of Object.entries(files)){const n=enc.encode(name),d=enc.encode(content),c=crc32(d);
+ const h=join([put(0x04034b50,4),put(20,2),put(0,2),put(0,2),put(0,2),put(33,2),put(c,4),put(d.length,4),put(d.length,4),put(n.length,2),put(0,2),n]);
+ central.push(join([put(0x02014b50,4),put(20,2),put(20,2),put(0,2),put(0,2),put(0,2),put(33,2),put(c,4),put(d.length,4),put(d.length,4),put(n.length,2),put(0,2),put(0,2),put(0,2),put(0,2),put(0,4),put(offset,4),n]));
+ chunks.push(h,d);offset+=h.length+d.length;}
+ const cd=join(central);return join([...chunks,cd,put(0x06054b50,4),put(0,2),put(0,2),put(central.length,2),put(central.length,2),put(cd.length,4),put(offset,4),put(0,2)]);
+}
+function workbook(sheets){
+ const xml=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const col=n=>{let s='';for(n++;n>0;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};
+ const files={
+ '[Content_Types].xml':'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+'</Types>',
+ '_rels/.rels':'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+ 'xl/workbook.xml':'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>'<sheet name="'+xml(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('')+'</sheets></workbook>',
+ 'xl/_rels/workbook.xml.rels':'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'</Relationships>'
+ };
+ sheets.forEach((s,i)=>files['xl/worksheets/sheet'+(i+1)+'.xml']='<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="'+s.rows[0].length+'" width="26" customWidth="1"/></cols><sheetData>'+s.rows.map((r,ri)=>'<row r="'+(ri+1)+'">'+r.map((v,ci)=>'<c r="'+col(ci)+(ri+1)+'" t="inlineStr"><is><t xml:space="preserve">'+xml(v)+'</t></is></c>').join('')+'</row>').join('')+'</sheetData></worksheet>');
+ return zip(files);
+}
+function exportBytes(t){
+ const q=t.q;return workbook([{name:'查询说明',rows:[['项目','值'],['数据说明','交互原型示例数据'],['任务编号',t.id],['查询场景',scenario(q)],['所选仓',q.warehouse||'所有可下单仓'],['所选门店',q.store||'所有关联门店'],['查询自动统配结果',q.allocation?'是':'否'],['首次入库豁免',q.skip?'是':'否'],['查询口径',q.store&&q.warehouse?'所选仓补货范围为全品；'+(simulated(q)?'假设直接供货':'沿用已配置路由'):'实际关系'],['完成时间',fmt(t.completed)]]},{name:'商品明细',rows:[[...baseHeaders,...(q.allocation?autoHeaders:[])],...rowsFor(q)]}]);
+}
+function download(t){const blob=new Blob([exportBytes(t)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=t.id+'_仓店品查询_示例.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+if(location.search.includes('annotated=1'))document.body.classList.add('annotated');
+options();change();refresh();
+</script>
+</body></html>
