@@ -198,6 +198,7 @@
                 <div class="field"><label for="store">门店</label><select id="store" class="select"></select></div>
                 <div class="filter-actions"><button class="btn solid" type="submit">提交查询</button><button class="btn" id="reset" type="button">重置</button></div>
               </div>
+              <div class="options"><label><input id="simulate" type="checkbox" disabled>模拟（切仓预演）</label><span class="small" style="margin:0">仅单店+单仓可用；将所选仓作为门店唯一配送中心，其他条件不变</span></div>
               <div class="options">
                 <span class="section-label" style="margin:0">附加查询 · 自动统配</span>
                 <label><input id="allocation" type="checkbox">查询自动统配结果</label>
@@ -243,15 +244,20 @@ const routes=[
  {store:'ST002',order:'DC001',ship:'DC001',type:'默认仓',items:['P002','P006']},
  {store:'ST101',order:'DC003',ship:'DC003',type:'默认仓；共享仓',items:['P001','P002']}
 ];
-const KEY='xlb-warehouse-store-query-tasks-v2';
+const warehouseRanges=Object.fromEntries(warehouses.map(w=>[w.id,[...new Set(routes.filter(r=>r.ship===w.id).flatMap(r=>r.items))]]));
+warehouseRanges.DC007=['P002','P004','P005','P006'];
+// Distinct sample products keep every real route observable after priority resolution.
+['默认仓','非默认仓','共享仓','前置仓','共享前置仓','区域仓'].forEach((name,i)=>{const id='P01'+i;products.push({id,name:'示例'+name+'专属商品',range:true,stopped:false,newProduct:true,receipt:true,history:[],price:3,stock:10});const ri=[0,1,2,3,5,4][i];routes[ri].items.push(id);warehouseRanges[routes[ri].ship].push(id);});
+const KEY='xlb-warehouse-store-query-tasks-v3';
 const nameOf=(items,id)=>items.find(x=>x.id===id)?.name||id;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('zh-CN',{hour12:false}):'—';
 const scenario=q=>q.warehouse&&q.store?'单仓单店':q.warehouse?'单仓所有店':'单店所有仓';
-const simulated=q=>q.warehouse&&q.store&&!routes.some(r=>r.store===q.store&&(r.order===q.warehouse||r.ship===q.warehouse));
+const simulated=q=>Boolean(q.warehouse&&q.store&&q.simulate);
+const queryMode=q=>simulated(q)?'模拟（切仓预演）':'实际查询';
 function readTasks(){try{const t=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(t))return t;}catch{} const now=Date.now();return [
  {id:'CX-DEMO-003',q:{org:'A',warehouse:'DC001',store:'',allocation:true,skip:false},created:now-120000,completed:null,status:'查询超时',note:'示例超时任务，可手动重试'},
- {id:'CX-DEMO-002',q:{org:'A',warehouse:'DC007',store:'ST001',allocation:true,skip:true},created:now-360000,completed:now-300000,status:'查询完成'},
+ {id:'CX-DEMO-002',q:{org:'A',warehouse:'DC002',store:'ST001',simulate:true,allocation:true,skip:true},created:now-360000,completed:now-300000,status:'查询完成'},
  {id:'CX-DEMO-001',q:{org:'A',warehouse:'',store:'ST001',allocation:false,skip:false},created:now-600000,completed:now-500000,status:'查询完成'}
  ]; }
 let tasks=readTasks();
@@ -260,25 +266,33 @@ function options(){
  $('warehouse').innerHTML='<option value="">不指定（查询单店所有仓）</option>'+warehouses.map(w=>'<option value="'+w.id+'">'+w.id+'｜'+w.name+'</option>').join('');
  $('store').innerHTML='<option value="">不指定（查询单仓所有店）</option>'+stores.filter(s=>s.org===$('org').value).map(s=>'<option value="'+s.id+'">'+s.id+'｜'+s.name+'</option>').join('');
 }
-function formQuery(){return {org:$('org').value,warehouse:$('warehouse').value,store:$('store').value,allocation:$('allocation').checked,skip:$('skipReceipt').checked};}
+function formQuery(){return {org:$('org').value,warehouse:$('warehouse').value,store:$('store').value,simulate:$('simulate').checked,allocation:$('allocation').checked,skip:$('skipReceipt').checked};}
 function change(){
  const q=formQuery(); $('skipReceipt').disabled=!q.allocation; if(!q.allocation)$('skipReceipt').checked=false;
- const simulation=simulated(q);$('scopeNote').className='scope-note'+(q.store&&q.warehouse?' simulated':'');
+ $('simulate').disabled=!(q.warehouse&&q.store);if($('simulate').disabled)$('simulate').checked=false;
+ const simulation=simulated(q);$('scopeNote').className='scope-note'+(simulation?' simulated':'');
  $('scopeNote').textContent=!q.warehouse&&!q.store?'请选择一个仓或一家门店。基础查询不检查库存、价格、下单日和余额。':
- q.warehouse&&q.store?scenario(q)+'：所选仓补货范围视为全部商品。'+(simulation?'当前无配送组织关系，模拟该仓直接供货。':'已配置关系，沿用实际共享仓及区域仓路由。'):
- scenario(q)+'：按实际供货关系查询，包含共享仓、前置仓及区域仓；基础查询不检查库存、价格、下单日和余额。';
+ q.warehouse&&q.store?(simulation?'切仓预演：所选仓作为该店唯一配送中心；保留真实补货范围和其他条件，结果可能比实际查询多。':'实际查询：按全部配送组织的优先级确定实际发货仓，再筛选所选仓；没有真实供货关系则无结果。'):
+ scenario(q)+'：按真实配送优先级及实际发货仓查询，包含共享仓、前置仓及区域仓；基础查询不检查库存、价格、下单日和余额。';
  $('notice').textContent='';
 }
 function rowsFor(q){
  let candidates;
- if(simulated(q)) candidates=[{store:q.store,order:q.warehouse,ship:q.warehouse,type:'模拟直接供货',items:products.map(p=>p.id)}];
- else candidates=routes.filter(r=>(!q.store||r.store===q.store)&&(!q.warehouse||r.order===q.warehouse||r.ship===q.warehouse)).map(r=>({...r,items:q.store&&q.warehouse&&r.ship===q.warehouse?products.map(p=>p.id):r.items}));
+ if(simulated(q)) candidates=[{store:q.store,order:q.warehouse,ship:q.warehouse,type:'切仓预演：唯一配送中心',items:warehouseRanges[q.warehouse]||[]}];
+ else {
+  const assigned=new Set();candidates=[];
+  // Ordered sample routes represent the existing distribution priority, resolved before filtering the requested ship warehouse.
+  for(const route of routes){if(q.store&&route.store!==q.store)continue;const items=[];
+   for(const id of route.items){const p=products.find(p=>p.id===id),key=route.store+'|'+id;if(!p||!p.range||p.stopped||assigned.has(key)||!warehouseRanges[route.ship]?.includes(id))continue;assigned.add(key);items.push(id);}
+   if(!q.warehouse||route.ship===q.warehouse)candidates.push({...route,items});
+  }
+ }
  const rows=[], seen=new Set();
  for(const r of candidates)for(const id of r.items){
   const p=products.find(p=>p.id===id);if(!p||!p.range||p.stopped)continue;
   const key=[r.store,r.order,r.ship,id].join('|');if(seen.has(key))continue;seen.add(key);
   const st=stores.find(s=>s.id===r.store);
-  let row=[st.id,st.name,'示例组织'+st.org,r.order,nameOf(warehouses,r.order),r.ship,nameOf(warehouses,r.ship),r.type,p.id,p.name,q.store&&q.warehouse?(simulated(q)?'模拟直接供货；所选仓补货范围为全品':'实际路由；所选仓补货范围为全品'):'实际关系'];
+  let row=[st.id,st.name,'示例组织'+st.org,r.order,nameOf(warehouses,r.order),r.ship,nameOf(warehouses,r.ship),r.type,p.id,p.name,simulated(q)?'模拟（切仓预演）：所选仓为该店唯一配送中心，其他条件不变':'实际查询：配送组织优先级生效'];
   if(q.allocation){
    const rule=r.store==='ST002'?'无':'示例自动统配规则';
    const triggers=[...(p.newProduct?['新品']:[]),...((p.receipt||q.skip)?['首次入库']:[])];
@@ -296,7 +310,7 @@ function rowsFor(q){
 const baseHeaders=['门店代码','门店名称','门店所属组织','下单配送中心代码','下单配送中心名称','实际发货仓代码','实际发货仓名称','供货关系类型','商品代码','商品名称','查询口径'];
 const autoHeaders=['自动统配状态','历史记录类型','命中的自动统配规则','命中条件','不统配原因','首次入库检查方式','预计统配数量','配送单位'];
 function render(){
- $('tasks').innerHTML=tasks.map(t=>'<tr><td>'+escapeHtml(t.id)+'</td><td>'+scenario(t.q)+'</td><td>'+escapeHtml('示例组织'+t.q.org)+'<span class="small">'+escapeHtml(t.q.warehouse?nameOf(warehouses,t.q.warehouse):'所有可下单仓')+'</span><span class="small">'+escapeHtml(t.q.store?nameOf(stores,t.q.store):'所有关联门店')+'</span></td><td>'+(!t.q.allocation?'不检查自动统配':'查询自动统配<span class="small">'+(t.q.skip?'首次入库视为满足':'首次入库按实际检查')+'</span>')+'</td><td>'+fmt(t.created)+'</td><td>'+fmt(t.completed)+'</td><td class="'+(t.status==='查询完成'?'state-done':t.status==='查询中'?'state-running':'state-error')+'">'+t.status+(t.note?'<span class="small">'+escapeHtml(t.note)+'</span>':'')+'</td><td>'+(t.status==='查询完成'?'<button class="action" data-download="'+t.id+'">下载Excel</button>':t.status==='查询中'?'—':'<button class="action" data-retry="'+t.id+'">重试</button>')+'</td></tr>').join('')||'<tr><td colspan="8" class="task-empty">暂无查询任务</td></tr>';
+ $('tasks').innerHTML=tasks.map(t=>'<tr><td>'+escapeHtml(t.id)+'</td><td>'+scenario(t.q)+'<span class="small">'+queryMode(t.q)+'</span></td><td>'+escapeHtml('示例组织'+t.q.org)+'<span class="small">'+escapeHtml(t.q.warehouse?nameOf(warehouses,t.q.warehouse):'所有可下单仓')+'</span><span class="small">'+escapeHtml(t.q.store?nameOf(stores,t.q.store):'所有关联门店')+'</span></td><td>'+(!t.q.allocation?'不检查自动统配':'查询自动统配<span class="small">'+(t.q.skip?'首次入库视为满足':'首次入库按实际检查')+'</span>')+'</td><td>'+fmt(t.created)+'</td><td>'+fmt(t.completed)+'</td><td class="'+(t.status==='查询完成'?'state-done':t.status==='查询中'?'state-running':'state-error')+'">'+t.status+(t.note?'<span class="small">'+escapeHtml(t.note)+'</span>':'')+'</td><td>'+(t.status==='查询完成'?'<button class="action" data-download="'+t.id+'">下载Excel</button>':t.status==='查询中'?'—':'<button class="action" data-retry="'+t.id+'">重试</button>')+'</td></tr>').join('')||'<tr><td colspan="8" class="task-empty">暂无查询任务</td></tr>';
  $('taskSummary').textContent='共 '+tasks.length+' 条任务';
  document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(tasks.find(t=>t.id===b.dataset.download)));
  document.querySelectorAll('[data-retry]').forEach(b=>b.onclick=()=>{const t=tasks.find(t=>t.id===b.dataset.retry);t.status='查询中';t.completed=null;t.ready=Date.now()+2500;t.note='';save();render();});
@@ -306,8 +320,8 @@ $('queryForm').onsubmit=e=>{e.preventDefault();const q=formQuery();if(!q.warehou
  if(tasks.some(t=>t.status==='查询中'&&JSON.stringify(t.q)===JSON.stringify(q))){$('notice').textContent='相同条件的任务正在查询中，请刷新查看';return;}
  const now=Date.now();tasks.unshift({id:'CX'+now.toString().slice(-10),q,created:now,completed:null,status:'查询中',ready:now+2500});save();render();$('notice').textContent='查询任务已提交，可稍后刷新查看状态。';};
 $('org').onchange=()=>{options();change();};
-['warehouse','store','allocation','skipReceipt'].forEach(id=>$(id).onchange=change);
-$('reset').onclick=()=>{$('warehouse').value='';$('store').value='';$('allocation').checked=false;change();};
+['warehouse','store','simulate','allocation','skipReceipt'].forEach(id=>$(id).onchange=change);
+$('reset').onclick=()=>{$('warehouse').value='';$('store').value='';$('simulate').checked=false;$('allocation').checked=false;change();};
 $('refresh').onclick=refresh;
 
 // Minimal standards-based XLSX writer: ZIP container with inline-string worksheets, no external dependencies.
@@ -336,7 +350,7 @@ function workbook(sheets){
  return zip(files);
 }
 function exportBytes(t){
- const q=t.q;return workbook([{name:'查询说明',rows:[['项目','值'],['数据说明','交互原型示例数据'],['任务编号',t.id],['查询场景',scenario(q)],['所选仓',q.warehouse||'所有可下单仓'],['所选门店',q.store||'所有关联门店'],['查询自动统配结果',q.allocation?'是':'否'],['首次入库豁免',q.skip?'是':'否'],['查询口径',q.store&&q.warehouse?'所选仓补货范围为全品；'+(simulated(q)?'假设直接供货':'沿用已配置路由'):'实际关系'],['完成时间',fmt(t.completed)]]},{name:'商品明细',rows:[[...baseHeaders,...(q.allocation?autoHeaders:[])],...rowsFor(q)]}]);
+ const q=t.q;return workbook([{name:'查询说明',rows:[['项目','值'],['数据说明','交互原型示例数据'],['任务编号',t.id],['查询场景',scenario(q)],['所选仓',q.warehouse||'所有可下单仓'],['所选门店',q.store||'所有关联门店'],['查询自动统配结果',q.allocation?'是':'否'],['首次入库豁免',q.skip?'是':'否'],['模拟（切仓预演）',simulated(q)?'是':'否'],['查询口径',simulated(q)?'所选仓为该店唯一配送中心，其他条件不变；保留真实仓补货范围':'实际查询：配送组织优先级生效，按实际发货仓输出'],['完成时间',fmt(t.completed)]]},{name:'商品明细',rows:[[...baseHeaders,...(q.allocation?autoHeaders:[])],...rowsFor(q)]}]);
 }
 function download(t){const blob=new Blob([exportBytes(t)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=t.id+'_仓店品查询_示例.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 if(location.search.includes('annotated=1'))document.body.classList.add('annotated');
