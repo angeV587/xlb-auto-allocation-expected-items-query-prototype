@@ -47,6 +47,8 @@
     .sidebar { width: var(--sidebar); background: #fff; border-right: 1px solid var(--border); padding-top: 42px; flex: 0 0 auto; }
     .nav-item { height: 50px; padding-left: 18px; display: flex; align-items: center; gap: 12px; color: #333; font-size: 14px; border-left: 3px solid transparent; }
     .nav-item.active { background: #eff4ff; color: var(--blue); border-left-color: var(--blue); }
+    .nav-sub {display:block;width:100%;border:0;border-left:3px solid var(--blue);background:#eff4ff;color:#315bcf;text-align:left;padding:10px 9px 10px 16px;font-size:12px;line-height:1.6}
+    .section-label {font-size:12px;font-weight:600;color:#58657a;margin:0 0 10px}
     .nav-icon { width: 17px; height: 17px; border: 1.5px solid currentColor; border-radius: 3px; display: inline-block; }
 
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -167,6 +169,7 @@
       <div class="nav-item"><span class="nav-icon"></span>看板</div>
       <div class="nav-item"><span class="nav-icon"></span>档案</div>
       <div class="nav-item active"><span class="nav-icon"></span>配送</div>
+      <button type="button" class="nav-sub" aria-current="page">仓店品关系查询</button>
       <div class="nav-item"><span class="nav-icon"></span>采购</div>
       <div class="nav-item"><span class="nav-icon"></span>库存</div>
       <div class="nav-item"><span class="nav-icon"></span>批发</div>
@@ -179,15 +182,16 @@
       <div class="work-tabs">
         <div class="work-tab">ERP看板</div>
         <div class="work-tab">门店订单</div>
-        <div class="work-tab active">自动统配规则</div>
+        <div class="work-tab active">仓店品关系查询</div>
       </div>
 
       <div class="content">
         <section class="page">
-          <div class="page-head"><span class="crumb">自动统配规则 /</span><span class="page-title">仓店品关系查询</span><span class="demo-note">交互演示 · 示例数据</span></div>
+          <div class="page-head"><span class="crumb">配送 /</span><span class="page-title">仓店品关系查询</span><span class="demo-note">交互演示 · 示例数据</span></div>
           <div class="filter-card">
-            <span class="mark">① 仓、店均单选，至少填写一个；自动识别三种场景</span>
+            <span class="mark">① 独立菜单、独立页签；基础查询支持单仓所有店、单店所有仓、单仓单店</span>
             <form id="queryForm">
+              <p class="section-label">基础查询 · 可下单商品</p>
               <div class="form-grid">
                 <div class="field"><label class="required" for="org">组织</label><select id="org" class="select"><option value="A">示例组织A</option><option value="B">示例组织B</option></select></div>
                 <div class="field"><label for="warehouse">配送中心门店</label><select id="warehouse" class="select"></select></div>
@@ -195,6 +199,7 @@
                 <div class="filter-actions"><button class="btn solid" type="submit">提交查询</button><button class="btn" id="reset" type="button">重置</button></div>
               </div>
               <div class="options">
+                <span class="section-label" style="margin:0">附加查询 · 自动统配</span>
                 <label><input id="allocation" type="checkbox">查询自动统配结果</label>
                 <label class="suboption"><input id="skipReceipt" type="checkbox" disabled>跳过首次入库检查，默认商品在仓库一定满足首次入库</label>
               </div>
